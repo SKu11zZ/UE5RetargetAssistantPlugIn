@@ -1,0 +1,25 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0-alpha",
+  "FriendlyName": "FX Retarget Assistant",
+  "Description": "Editor-only batch retarget assistant using an existing IK Retargeter.",
+  "Category": "Animation",
+  "CreatedBy": "FX",
+  "CanContainContent": false,
+  "IsBetaVersion": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "FX_RetargetAssistant",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "IKRig",
+      "Enabled": true
+    }
+  ]
+}

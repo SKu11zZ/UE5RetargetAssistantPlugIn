@@ -1,0 +1,32 @@
+# Unreal Engine generated files
+Binaries/
+Build/
+Builds/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# Packaged plugin output
+*.zip
+*.7z
+*.rar
+
+# IDE and OS files
+.vs/
+.vscode/
+*.sln
+*.suo
+*.VC.db
+*.opensdf
+*.opendb
+Thumbs.db
+Desktop.ini
+
+# Local agent/runtime metadata
+.agents/
+.codex/
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
