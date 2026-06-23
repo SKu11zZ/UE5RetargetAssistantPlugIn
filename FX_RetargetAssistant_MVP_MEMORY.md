@@ -1,5 +1,76 @@
 # FX_RetargetAssistant MVP Memory
 
+## Current Truth - UE5.8 Pivot (2026-06-23)
+
+Current active target:
+
+- Unreal Engine 5.8 only
+- Branch: `ue58-main`
+- Active project: `F:\Unreal Projects\FXRA58`
+- Active plugin destination: `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`
+- Source repository plugin folder: `G:\UE5重定向插件开发\插件\FX_RetargetAssistant`
+- Current phase: MVP1 Alpha UE5.8 Migration / Guided Auto Setup + Batch Export
+
+UE5.4 status:
+
+- UE5.4 MVP1 Alpha is archived.
+- It proved the workflow, but it is no longer the active development target.
+- UE5.4 / 5.5 / 5.6 / 5.7 compatibility work, VersionBridge expansion, and multi-version BuildPlugin packaging are frozen.
+
+Important boundary:
+
+- A separate UE5.8 project named `ResearchOnUENewTools` may be running in `F:\Unreal Projects\ResearchOnUENewTools`.
+- Do not close, kill, modify, or otherwise affect that project or its running editor process.
+- Only operate on `FXRA58` for FX_RetargetAssistant migration work.
+
+## Phase 27 - UE5.8 Pivot / UE5.8-only Migration Start (2026-06-23)
+
+User direction:
+
+- Stop pursuing UE5.4 - UE5.8 cross-version compatibility.
+- Make UE5.8 the only active target.
+- Update documents and project wording first, then migrate code to FXRA58.
+- Preserve UE5.4 history as archive, not current execution guidance.
+
+Documentation updates started:
+
+- `README.md` rewritten for UE5.8-only mainline.
+- `FX_RetargetAssistant_技术方案.md` rewritten as UE5.8-only technical plan.
+- `FX_RetargetAssistant_MVP0_SCOPE.md` rewritten as MVP0 archive.
+- `FX_RetargetAssistant_LEGACY_PLAN_NOTE.md` rewritten as legacy archive.
+- `FX_RetargetAssistant_UE54_MVP_Closure_Checklist.md` rewritten as UE5.4 archive.
+- `FX_RetargetAssistant_BUILD_NOTES.md` rewritten as UE5.8 build plan plus UE5.4 archive notes.
+- `FX_RetargetAssistant_MVP1_ALPHA_CLOSURE_CHECKLIST.md` rewritten as UE5.8 migration checklist.
+- `FX_RetargetAssistant/MVP0_MANUAL_TEST.md` rewritten as manual test archive with UE5.8 validation pointer.
+
+Code direction:
+
+- Removed historical UE version conditional around `bRetainAdditiveFlags`; UE5.8 mainline uses the UE5.8 API directly.
+- Deleted the empty `FX_RetargetAssistantVersionBridge.h` stub. Do not expand VersionBridge unless the commercial direction explicitly returns to cross-version support.
+- Updated smoke-test messaging so the UE5.4 commandlet limitation is no longer treated as a UE5.8 design premise.
+
+Next work:
+
+- Copy plugin into `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`.
+- Remove generated artifacts in the target plugin directory.
+- Regenerate/build with UE5.8.
+- Fix UE5.8 API compile errors directly.
+- Revalidate the UE5.8 test matrix.
+
+Migration result:
+
+- Plugin copied into `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`.
+- Target plugin generated artifacts were excluded/removed during migration.
+- `FXRA58Editor` built successfully with UE5.8.
+- Observed toolchain:
+  - UE5.8 bundled .NET 10 runtime
+  - Visual Studio 14.44.35228 toolchain
+  - Windows 10.0.26100.0 SDK
+- First build had UBA memory-pressure retries but completed successfully.
+- Incremental rebuild after UI title update also passed.
+- UI title changed to `FX Retarget Assistant - MVP1 Alpha / UE5.8`.
+- `ResearchOnUENewTools` UE5.8 editor process was detected and left untouched.
+
 ## Phase 0 - Baseline Restore And UE5.4 Toolchain Check
 
 - Date: 2026-06-23

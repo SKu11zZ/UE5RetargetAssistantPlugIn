@@ -1,105 +1,55 @@
-﻿# FX_RetargetAssistant MVP1 Alpha Closure Checklist
+# FX_RetargetAssistant MVP1 Alpha UE5.8 Migration Checklist
 
-Status: MVP1 Alpha / Guided Auto Setup + Batch Export flow working in UE5.4 / Closure in progress.
+Status: MVP1 Alpha UE5.8 Migration / Guided Auto Setup + Batch Export.
 
-Do not begin UE5.5 / UE5.6 adaptation until this checklist is passed.
+Current active target: **Unreal Engine 5.8 only**.
+
+UE5.4 MVP1 Alpha is archived. It proved the workflow but is no longer the active compatibility target.
 
 ## Scope Boundary
 
-- Retarget & Export remains pure export.
-- Retarget & Export must not auto-create IK Rig / IK Retargeter.
-- Retarget & Export must not auto-repair IK Mapping.
-- Retarget & Export must not modify user-selected Retargeters.
+- `Retarget & Export` remains pure export.
+- It must not auto-create IK Rig / IK Retargeter.
+- It must not auto-repair IK Mapping.
+- It must not Auto Align.
+- It must not modify user-selected Retargeters.
 - Auto Create / Recreate / Auto Repair may save only plugin-generated assets under `/Game/FX_RetargetAssistant/Setups/`.
 
-## Test Matrix
+## UE5.8 Migration Tasks
 
 | Case | Status | Notes |
 | --- | --- | --- |
-| Mixamo -> UE Manny | Pending visual closure | Requires Auto Create, Open Retargeter, verify Pelvis=None if Mixamo -> UE preset triggers, export and preview. |
-| Mixamo -> UE Quinn | Pending | Same expected behavior as Manny target if Quinn uses UE Manny-family naming. |
-| Manny -> Quinn | Pending | Pelvis=None preset should not be logged as Mixamo -> UE unless source is detected as Mixamo. |
-| Use Existing Retargeter / Manual Mode | Pending | Retarget & Export uses manual Retargeter as-is. |
-| Auto Create Setup -> Open Retargeter -> manual inspect -> export | Pending | Verify Open button and generated asset paths. |
-| Source Mesh changed clears animations | Implemented, pending visual confirmation | Source change clears SelectedAnimations and Anim Clip picker. |
-| Add Selected filters non-Source Skeleton animations | Implemented, pending visual confirmation | Non-matching animations log Warning and are skipped. |
-| Auto Repair does not modify user Retargeter | Implemented, pending manual check | Non-`/Game/FX_RetargetAssistant/Setups/` path only warns. |
-| Output duplicate naming strategy | Existing behavior, pending explicit check | No overwrite; generated unique names expected. |
-| Restart persistence | Pending | Generated IK Rig / Retargeter / AnimSequence should load after closing/reopening UE. |
+| Copy plugin into FXRA58 | Passed | Target: `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`. |
+| Remove target generated artifacts | Passed | Removed plugin `Binaries/`, `Intermediate/`, `Saved`, `.vs` if present before UE5.8 build. |
+| Regenerate project files | Passed via UBT | UE5.8 UBT invalidated makefile and generated required build data during compile. |
+| Compile FXRA58Editor | Passed | Built with UE5.8 and VS 14.44 toolchain. UBA retried several compile actions due memory pressure but build succeeded. |
+| Remove/minimize VersionBridge usage | Passed | Deleted empty `FX_RetargetAssistantVersionBridge.h`; removed low-version guard around `bRetainAdditiveFlags`. |
+| Verify Auto Create IK Rig + Retargeter | Pending | Prefer UE5.8 native APIs; plugin policy is supplement. |
+| Verify Open Retargeter | Pending | Native Retargeter editor opens generated asset. |
+| Verify Auto Repair IK Mapping | Pending | Only modifies plugin-generated setup assets. |
+| Verify Retarget & Export | Pending | Pure export only. |
+| Verify Report.json | Pending | Includes UE5.8 root-family and naming fields. |
+| Verify Show Output Folder | Pending | Syncs Content Browser to exported assets. |
 
-## Implemented For Closure
+## UE5.8 First Test Matrix
 
-- Step 3 renamed to `Retarget Setup`.
-- Added read-only `Setup Status`: Not Created / Ready / Needs Review / Missing Chains / Invalid.
-- Auto Create defaults to reusing existing generated setup assets.
-- Added `Recreate Generated Setup` for explicit reconfiguration/save.
-- Added `Auto Repair IK Mapping` with generated-asset guard.
-- Report.json extended with MVP1 setup fields.
-- Mixamo -> UE Pelvis=None rule documented in logs/report warnings only when the preset is detected.
+| Case | Status | Expected Result |
+| --- | --- | --- |
+| Mixamo -> UE Manny | Pending | `Pelvis=None`; no pelvis/body shaking. |
+| UE Mannequin -> Mixamo | Pending | `Root=None`; no floating/global rotation. |
+| Manny -> Quinn | Pending | UE -> UE keeps Root/Pelvis exact; no None special rule. |
+| Manual Mode / Use Existing Retargeter | Pending | User Retargeter is not modified. |
+| Auto Repair IK Mapping | Pending | Only repairs `/Game/FX_RetargetAssistant/Setups/`; user Retargeter gets Warning only. |
+| Recreate Generated Setup | Pending | Only clears/rebuilds plugin-generated assets. |
+| Duplicate output names | Pending | Generates `_001`, `_002`; no overwrite. |
+| Open Retargeter -> manual adjust -> export | Pending | User fine-tuned generated Retargeter exports correctly. |
+| Reopen UE5.8 project | Pending | Generated IK Rig / Retargeter / AnimSequence reload. |
 
-## Latest UX Fix
+## Root Family Directional Policy
 
-- Clear Animations now clears both the selected animation list and the Anim Clip picker. Built successfully in UE5.4.
+- `UEMannequin -> Mixamo`: Target Chain `Root=None`.
+- `Mixamo -> UEMannequin`: Target Chain `Pelvis=None`; Target Chain `Root=None`.
+- `UEMannequin -> UEMannequin`: Root and Pelvis remain exact.
+- `Mixamo -> Mixamo`: Retarget Root uses `Hips`; Root defaults to `None`.
 
-## Closure Tightening - 2026-06-23
-
-- `Setup Status` is now refreshed after Source Mesh changes, Target Mesh changes, Retargeter changes, Auto Create, Recreate, Auto Repair, Add Animation, and Clear Animations.
-- Status rules currently applied:
-  - `Invalid`: missing Source/Target mesh or setup creation failure.
-  - `Not Created`: Source/Target are valid, but no Retargeter is selected.
-  - `Missing Chains`: generated setup reported skipped/missing core chain warnings.
-  - `Needs Review`: setup can be used but needs attention, including no animations selected, manual/user Retargeter selected, or setup warnings such as Mixamo -> UE preset behavior.
-  - `Ready`: generated Retargeter is selected, no setup warnings are active, and at least one matching AnimSequence is selected.
-- `Report.json` now explicitly records `namingRule.conflictPolicy = "Create Unique Name"` and `overwrite = false`.
-- Batch Retarget log now states: existing assets are not overwritten; unique output names are created.
-- UE5.4 compile passed with MSVC 14.38.
-- Headless smoke test passed for Mixamo -> UE5 Manny TestSet Preflight: 3 animations ready. The commandlet intentionally skips actual export because UE5.4 batch retarget export touches Content Browser / Slate.
-
-Remaining before marking Closure passed:
-
-- Complete visual/editor matrix for Mixamo -> Manny, Mixamo -> Quinn, Manny -> Quinn, Manual Mode, Auto Repair user-asset guard, duplicate output naming, restart persistence, Add Selected filtering, Source Mesh change clearing, and Open Retargeter manual-adjust/export.
-
-## Root Family Directional Policy - 2026-06-23
-
-- Added Source/Target skeleton family detection:
-  - `UEMannequin`
-  - `Mixamo`
-  - `GenericHumanoid`
-  - `Unknown`
-- Auto Create / Recreate / Auto Repair now apply directional root-family overrides on plugin-generated setup assets after:
-  `Exact Chain Automap -> Auto Align Target Pose`.
-- `UEMannequin -> Mixamo`:
-  - Source Retarget Root: `pelvis`
-  - Target Retarget Root: `Hips`
-  - Target Chain `Root` is mapped to Source Chain `None`.
-  - Pelvis/Hips mapping remains exact.
-- `Mixamo -> UEMannequin`:
-  - Source Retarget Root: `Hips`
-  - Target Retarget Root: `pelvis`
-  - Target Chain `Pelvis` is mapped to Source Chain `None`.
-  - Target Chain `Root` is also mapped to Source Chain `None` when Mixamo source has no reliable real root.
-- `UEMannequin -> UEMannequin`:
-  - Root and Pelvis remain exact.
-  - No Root/Pelvis None override is applied.
-- `Mixamo -> Mixamo`:
-  - Retarget Root uses `Hips`.
-  - Target Chain `Root` defaults to Source Chain `None`.
-  - Hips/Pelvis mapping remains exact.
-- `Report.json` now records:
-  - `rootFamilyPolicy`
-  - `sourceSkeletonFamily`
-  - `targetSkeletonFamily`
-  - `sourceRetargetRoot`
-  - `targetRetargetRoot`
-  - `rootChainMapping`
-  - `pelvisChainMapping`
-  - `chainMappingSummary`
-- User/manual Retargeters outside `/Game/FX_RetargetAssistant/Setups/` remain read-only; Auto Repair still only warns for those.
-- UE5.4 compile passed after this change.
-- Smoke test still passes for Mixamo -> UE5 Manny TestSet Preflight.
-
-New visual closure cases:
-
-- Mixamo -> UE Manny: confirm Pelvis=None and no pelvis/body shaking.
-- UE Mannequin -> Mixamo: confirm Root=None and no floating/global rotation.
-
+These rules are for plugin-generated setup assets only.

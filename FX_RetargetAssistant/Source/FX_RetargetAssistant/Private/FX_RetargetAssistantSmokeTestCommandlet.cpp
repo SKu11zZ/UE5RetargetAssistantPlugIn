@@ -77,7 +77,7 @@ int32 UFX_RetargetAssistantSmokeTestCommandlet::Main(const FString& Params)
     }
 
     UE_LOG(LogTemp, Display, TEXT("Headless preflight passed for %d animation(s)."), Input.AssetsToRetarget.Num());
-    UE_LOG(LogTemp, Display, TEXT("Skipping batch retarget in commandlet mode because UE5.4 UIKRetargetBatchOperation always syncs Content Browser and posts Slate notifications."));
-    UE_LOG(LogTemp, Display, TEXT("Use the FX Retarget Assistant editor panel to run the actual batch export."));
+    UE_LOG(LogTemp, Display, TEXT("Headless export is not executed by this migration smoke test."));
+    UE_LOG(LogTemp, Display, TEXT("UE5.8 commandlet / editor automation / batch export behavior must be revalidated separately."));
     return 0;
 }

@@ -148,9 +148,7 @@ bool FFX_RetargetAssistantBatchExporter::Run(const FFRA_BatchRetargetInput& Inpu
         Context.bIncludeReferencedAssets = false;
         Context.bOverwriteExistingFiles = Input.bOverwriteExisting;
         Context.bExportOnlyAnimatedBones = true;
-#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 5)
         Context.bRetainAdditiveFlags = true;
-#endif
 
         UIKRetargetBatchOperation* BatchOperation = NewObject<UIKRetargetBatchOperation>();
         BatchOperation->AddToRoot();

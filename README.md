@@ -1,60 +1,82 @@
 # FX_RetargetAssistant / 重定向小助手
 
-FX_RetargetAssistant is an Unreal Engine editor plugin for guided animation retargeting workflows.
+Current active target: **Unreal Engine 5.8 only**.
 
-Current project status:
+Current phase: **MVP1 Alpha UE5.8 Migration / Guided Auto Setup + Batch Export**.
 
-- MVP1 Alpha
-- Guided Auto Setup + Batch Export flow working in UE 5.4
-- MVP1 Alpha Closure in progress
-- UE 5.5 / 5.6 adaptation has not started yet
+The UE5.4 implementation is archived. It proved the workflow, but it is no longer the active development target or compatibility constraint.
 
-## MVP1 Alpha Scope
+## Positioning
 
-The plugin provides an editor panel for:
+FX_RetargetAssistant is a UE5.8 Editor Plugin. It does not replace Unreal Engine's native retargeting system. It provides a guided setup and batch export workflow on top of UE5.8 IK Rig, IK Retargeter, and Batch Retarget APIs.
 
-- Selecting Source and Target character skeletal meshes
-- Adding Source Skeleton-matching AnimSequence assets
-- Creating or reusing plugin-generated IK Rig / IK Retargeter setup assets
-- Opening the IK Retargeter for manual review
-- Batch retargeting selected animations to Animation Sequence assets
-- Writing a `Report.json` with setup, chain mapping, warnings, outputs, and summary
+One-line flow:
+
+Select a Source character, Target character, and Source animations; the plugin creates or reuses IK Rig / IK Retargeter setup assets, applies UE5.8 native setup behavior plus FX_RetargetAssistant Root Family Directional Policy, then batch exports Target-ready AnimSequence assets.
+
+## Main Workflow
+
+1. Select Source Character Mesh.
+2. Select Target Character Mesh.
+3. Add Source Skeleton-matching AnimSequence assets.
+4. Auto Create IK Rig + Retargeter.
+5. Review or fine-tune the generated Retargeter in Unreal's native editor.
+6. Optionally Auto Repair IK Mapping for plugin-generated setup assets.
+7. Choose Output Folder, Suffix, and Conflict Policy.
+8. Retarget & Export.
+9. Review `Report.json` and synced output assets in Content Browser.
 
 ## Safety Boundaries
 
 - `Retarget & Export` is pure export behavior.
-- It does not automatically create IK Rig / IK Retargeter assets.
-- It does not automatically repair chain mappings.
+- It does not create IK Rig assets.
+- It does not create IK Retargeter assets.
+- It does not repair mapping.
+- It does not Auto Align.
 - It does not modify user-selected Retargeters.
 - Auto Repair and Recreate only modify plugin-generated setup assets under:
   `/Game/FX_RetargetAssistant/Setups/`
 - Manual/user Retargeters outside that path are treated as read-only by default.
 
+## Root Family Directional Policy
+
+Root-family chains are not handled like ordinary Spine/Arm/Leg exact chain mapping.
+
+- `UEMannequin -> Mixamo`: Target Chain `Root` maps to `None`.
+- `Mixamo -> UEMannequin`: Target Chain `Pelvis` maps to `None`; Target Chain `Root` also maps to `None`.
+- `UEMannequin -> UEMannequin`: Root and Pelvis remain exact.
+- `Mixamo -> Mixamo`: Retarget Root uses `Hips`; Target Chain `Root` defaults to `None`.
+
+These rules apply only to plugin-generated setup assets, or to copied assets explicitly repaired under the plugin setup path.
+
 ## Output Policy
 
-The default output conflict strategy is `Create Unique Name`.
+Default conflict policy: `Create Unique Name`.
 
-Existing assets are not overwritten by default. Duplicate outputs are expected to become names such as:
+Existing assets are not overwritten by default. Duplicate outputs should become:
 
 - `Walk_RTG`
 - `Walk_RTG_001`
 - `Walk_RTG_002`
 
-## Development Notes
+`Report.json` records:
 
-Primary UE 5.4 development project:
+- `namingRule.conflictPolicy = "Create Unique Name"`
+- `namingRule.overwrite = false`
 
-`F:\Unreal Projects\FXRA54`
+## Development Paths
 
-Primary plugin folder:
+Active UE5.8 project:
 
-`FX_RetargetAssistant/`
+`F:\Unreal Projects\FXRA58`
 
-Useful project documents:
+Active plugin destination:
 
-- `FX_RetargetAssistant_MVP_MEMORY.md`
-- `FX_RetargetAssistant_MVP1_ALPHA_CLOSURE_CHECKLIST.md`
-- `FX_RetargetAssistant_BUILD_NOTES.md`
+`F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`
+
+Source repository plugin folder:
+
+`G:\UE5重定向插件开发\插件\FX_RetargetAssistant`
 
 ## Ownership
 

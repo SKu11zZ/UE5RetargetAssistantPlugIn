@@ -46,7 +46,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
             .Padding(0, 0, 0, 8)
             [
                 SNew(STextBlock)
-                .Text(LOCTEXT("Title", "FX Retarget Assistant - MVP 1 Alpha"))
+                .Text(LOCTEXT("Title", "FX Retarget Assistant - MVP1 Alpha / UE5.8"))
                 .Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
             ]
 
@@ -339,7 +339,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
         ]
     ];
 
-    AppendLog(EFRA_LogSeverity::Info, TEXT("MVP 1 Alpha UI ready. Choose Source and Target Character Meshes first; animations are filtered by Source Skeleton."));
+    AppendLog(EFRA_LogSeverity::Info, TEXT("MVP1 Alpha / UE5.8 UI ready. Choose Source and Target Character Meshes first; animations are filtered by Source Skeleton."));
 }
 
 FReply SFX_RetargetAssistantPanel::UseSelectedAnimations()

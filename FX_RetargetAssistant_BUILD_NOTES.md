@@ -1,58 +1,62 @@
 # FX_RetargetAssistant Build Notes
 
-## UE5.4 Alpha Packaging
+Current active target: **Unreal Engine 5.8 only**.
 
-Validated package command:
+Active project:
+
+`F:\Unreal Projects\FXRA58`
+
+Active engine:
+
+`F:\Epic Games\UE_5.8`
+
+Active branch:
+
+`ue58-main`
+
+## UE5.8 Build Plan
+
+1. Copy the repository plugin folder into:
+   `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`
+2. Remove generated plugin artifacts in the target project:
+   - `Binaries/`
+   - `Intermediate/`
+   - `Saved/`
+   - `.vs/` if present
+3. Regenerate project files using UE5.8.
+4. Build `FXRA58Editor`.
+5. Fix UE5.8 API compile errors directly against UE5.8 APIs.
+6. Remove or minimize historical low-version conditional compilation.
+
+## UE5.8 Build Result - First Migration Pass
+
+Result: passed.
+
+Command:
 
 ```powershell
-& 'F:\Epic Games\UE_5.4\Engine\Build\BatchFiles\RunUAT.bat' BuildPlugin `
-  -Plugin='C:\FXRA_UE54_Build\Source\FX_RetargetAssistant\FX_RetargetAssistant.uplugin' `
-  -Package='C:\FXRA_UE54_Build\Package\FX_RetargetAssistant' `
-  -TargetPlatforms=Win64 `
-  -Rocket
+& 'F:\Epic Games\UE_5.8\Engine\Build\BatchFiles\Build.bat' FXRA58Editor Win64 Development -Project='F:\Unreal Projects\FXRA58\FXRA58.uproject' -WaitMutex -NoHotReloadFromIDE
 ```
 
-Result:
+Toolchain observed:
 
-- `BUILD SUCCESSFUL`
-- Output root: `C:\FXRA_UE54_Build\Package\FX_RetargetAssistant`
+- Unreal Engine 5.8
+- Visual Studio 14.44.35228 toolchain
+- Windows 10.0.26100.0 SDK
 
-## Path Requirement
+Notes:
 
-For UE5.4 Alpha validation, run `RunUAT BuildPlugin` from a pure-English path.
+- UBT invalidated the makefile and processed project build data.
+- UBA retried several compile actions because the machine was under memory pressure.
+- Final result succeeded.
+- `ResearchOnUENewTools` was left running and was not closed or modified.
 
-Observed failure:
+## Archived UE5.4 Notes
 
-- Source/package path under `G:\UE5重定向插件开发\插件\...`
-- Failure occurred during PCH generation.
-- The same plugin built successfully after copying to `C:\FXRA_UE54_Build\...`.
+The UE5.4 packaging and commandlet notes are historical only.
 
-Until explicitly fixed and revalidated, do not use Chinese or non-ASCII paths for release packaging.
+- Do not treat MSVC 14.38 as a current UE5.8 requirement.
+- Do not treat the UE5.4 commandlet Content Browser / Slate limitation as a UE5.8 design premise.
+- Do not continue UE5.4 / 5.5 / 5.6 / 5.7 BuildPlugin package work on the current mainline.
 
-## Clean Project Load Check
-
-Packaged plugin was installed into:
-
-- `C:\FXRA_UE54_Build\CleanProject\Plugins\FX_RetargetAssistant`
-
-Log evidence:
-
-- `LogPluginManager: Mounting Project plugin FX_RetargetAssistant`
-- `Executing Class /Script/FX_RetargetAssistant.FX_RetargetAssistantSmokeTestCommandlet`
-
-The commandlet returned missing Mixamo test assets in the clean project, which is expected because demo/test content is not packaged with MVP0.
-
-## DX12 Environment Note
-
-FXRA54 crashed on one machine through UE5.4's D3D12 startup path:
-
-- `Assertion failed: Distance >= 0`
-- `D3D12Adapter.cpp [Line: 1861]`
-
-This is treated as an environment / RHI issue, not a plugin issue.
-
-For local closure testing, FXRA54 was switched to DX11:
-
-- `DefaultGraphicsRHI=DefaultGraphicsRHI_DX11`
-
-Before public release, run a smoke test in a clean project using the project's default RHI.
+UE5.8 must be tested on its own toolchain and API behavior.
