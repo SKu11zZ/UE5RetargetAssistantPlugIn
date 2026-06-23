@@ -59,3 +59,47 @@ Remaining before marking Closure passed:
 
 - Complete visual/editor matrix for Mixamo -> Manny, Mixamo -> Quinn, Manny -> Quinn, Manual Mode, Auto Repair user-asset guard, duplicate output naming, restart persistence, Add Selected filtering, Source Mesh change clearing, and Open Retargeter manual-adjust/export.
 
+## Root Family Directional Policy - 2026-06-23
+
+- Added Source/Target skeleton family detection:
+  - `UEMannequin`
+  - `Mixamo`
+  - `GenericHumanoid`
+  - `Unknown`
+- Auto Create / Recreate / Auto Repair now apply directional root-family overrides on plugin-generated setup assets after:
+  `Exact Chain Automap -> Auto Align Target Pose`.
+- `UEMannequin -> Mixamo`:
+  - Source Retarget Root: `pelvis`
+  - Target Retarget Root: `Hips`
+  - Target Chain `Root` is mapped to Source Chain `None`.
+  - Pelvis/Hips mapping remains exact.
+- `Mixamo -> UEMannequin`:
+  - Source Retarget Root: `Hips`
+  - Target Retarget Root: `pelvis`
+  - Target Chain `Pelvis` is mapped to Source Chain `None`.
+  - Target Chain `Root` is also mapped to Source Chain `None` when Mixamo source has no reliable real root.
+- `UEMannequin -> UEMannequin`:
+  - Root and Pelvis remain exact.
+  - No Root/Pelvis None override is applied.
+- `Mixamo -> Mixamo`:
+  - Retarget Root uses `Hips`.
+  - Target Chain `Root` defaults to Source Chain `None`.
+  - Hips/Pelvis mapping remains exact.
+- `Report.json` now records:
+  - `rootFamilyPolicy`
+  - `sourceSkeletonFamily`
+  - `targetSkeletonFamily`
+  - `sourceRetargetRoot`
+  - `targetRetargetRoot`
+  - `rootChainMapping`
+  - `pelvisChainMapping`
+  - `chainMappingSummary`
+- User/manual Retargeters outside `/Game/FX_RetargetAssistant/Setups/` remain read-only; Auto Repair still only warns for those.
+- UE5.4 compile passed after this change.
+- Smoke test still passes for Mixamo -> UE5 Manny TestSet Preflight.
+
+New visual closure cases:
+
+- Mixamo -> UE Manny: confirm Pelvis=None and no pelvis/body shaking.
+- UE Mannequin -> Mixamo: confirm Root=None and no floating/global rotation.
+

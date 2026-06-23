@@ -15,6 +15,14 @@ struct FFRA_AutoRetargetSetup
     TSoftObjectPtr<class UIKRigDefinition> TargetIKRig;
     TSoftObjectPtr<UIKRetargeter> Retargeter;
     FString SetupFolder;
+    FString RootFamilyPolicy;
+    FString SourceSkeletonFamily;
+    FString TargetSkeletonFamily;
+    FString SourceRetargetRoot;
+    FString TargetRetargetRoot;
+    FString RootChainMapping;
+    FString PelvisChainMapping;
+    FString ChainMappingSummary;
     TArray<FString> Messages;
 };
 

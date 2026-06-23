@@ -19,6 +19,14 @@ namespace
     constexpr const TCHAR* MixamoRetargeterPath = TEXT("/Game/FX_RetargetAssistant/TestSet/RTG_Mixamo_to_UE5Manny_FXRA.RTG_Mixamo_to_UE5Manny_FXRA");
     constexpr const TCHAR* MixamoRetargeterPackage = TEXT("/Game/FX_RetargetAssistant/TestSet/RTG_Mixamo_to_UE5Manny_FXRA");
 
+    enum class EFRA_SkeletonFamily : uint8
+    {
+        UEMannequin,
+        Mixamo,
+        GenericHumanoid,
+        Unknown
+    };
+
     bool HasBone(const USkeletalMesh* Mesh, const FName BoneName)
     {
         return Mesh && Mesh->GetRefSkeleton().FindBoneIndex(BoneName) != INDEX_NONE;
@@ -279,9 +287,138 @@ namespace
             && FirstExistingBoneFlexible(Mesh, {TEXT("thigh_l")}) != NAME_None;
     }
 
-    bool ShouldApplyMixamoToUEPreset(const USkeletalMesh* SourceMesh, const USkeletalMesh* TargetMesh)
+    bool IsLikelyGenericHumanoidMesh(const USkeletalMesh* Mesh)
     {
-        return IsLikelyMixamoMesh(SourceMesh) && IsLikelyUEMannyFamilyMesh(TargetMesh);
+        return FirstExistingBoneFlexible(Mesh, {TEXT("pelvis"), TEXT("Hips"), TEXT("hips"), TEXT("hip")}) != NAME_None
+            && FirstExistingBoneFlexible(Mesh, {TEXT("head"), TEXT("Head")}) != NAME_None;
+    }
+
+    EFRA_SkeletonFamily DetectSkeletonFamily(const USkeletalMesh* Mesh)
+    {
+        if (IsLikelyUEMannyFamilyMesh(Mesh))
+        {
+            return EFRA_SkeletonFamily::UEMannequin;
+        }
+        if (IsLikelyMixamoMesh(Mesh))
+        {
+            return EFRA_SkeletonFamily::Mixamo;
+        }
+        if (IsLikelyGenericHumanoidMesh(Mesh))
+        {
+            return EFRA_SkeletonFamily::GenericHumanoid;
+        }
+        return EFRA_SkeletonFamily::Unknown;
+    }
+
+    FString SkeletonFamilyToString(EFRA_SkeletonFamily Family)
+    {
+        switch (Family)
+        {
+        case EFRA_SkeletonFamily::UEMannequin:
+            return TEXT("UEMannequin");
+        case EFRA_SkeletonFamily::Mixamo:
+            return TEXT("Mixamo");
+        case EFRA_SkeletonFamily::GenericHumanoid:
+            return TEXT("GenericHumanoid");
+        default:
+            return TEXT("Unknown");
+        }
+    }
+
+    FName GetDirectionalRetargetRoot(const USkeletalMesh* Mesh, EFRA_SkeletonFamily Family)
+    {
+        if (Family == EFRA_SkeletonFamily::UEMannequin)
+        {
+            return FirstExistingBoneFlexible(Mesh, {TEXT("pelvis")});
+        }
+        if (Family == EFRA_SkeletonFamily::Mixamo)
+        {
+            return FirstExistingBoneFlexible(Mesh, {TEXT("Hips"), TEXT("mixamorig:Hips"), TEXT("mixamorig_Hips")});
+        }
+        return FirstExistingBoneFlexible(Mesh, {TEXT("pelvis"), TEXT("Hips"), TEXT("hips"), TEXT("hip"), TEXT("root")});
+    }
+
+    void InitializeRootPolicySummary(USkeletalMesh* SourceMesh, USkeletalMesh* TargetMesh, FFRA_AutoRetargetSetup& OutSetup)
+    {
+        const EFRA_SkeletonFamily SourceFamily = DetectSkeletonFamily(SourceMesh);
+        const EFRA_SkeletonFamily TargetFamily = DetectSkeletonFamily(TargetMesh);
+        const FName SourceRoot = GetDirectionalRetargetRoot(SourceMesh, SourceFamily);
+        const FName TargetRoot = GetDirectionalRetargetRoot(TargetMesh, TargetFamily);
+
+        OutSetup.SourceSkeletonFamily = SkeletonFamilyToString(SourceFamily);
+        OutSetup.TargetSkeletonFamily = SkeletonFamilyToString(TargetFamily);
+        OutSetup.SourceRetargetRoot = SourceRoot.IsNone() ? TEXT("None") : SourceRoot.ToString();
+        OutSetup.TargetRetargetRoot = TargetRoot.IsNone() ? TEXT("None") : TargetRoot.ToString();
+        OutSetup.RootFamilyPolicy = TEXT("Exact Automap");
+        OutSetup.RootChainMapping = TEXT("Exact");
+        OutSetup.PelvisChainMapping = TEXT("Exact");
+        OutSetup.ChainMappingSummary = TEXT("Generated setup uses exact chain mapping with directional root-family overrides when a supported skeleton-family direction is detected.");
+    }
+
+    void ApplyDirectionalRootFamilyOverrides(const UIKRetargeterController* Controller, USkeletalMesh* SourceMesh, USkeletalMesh* TargetMesh, FFRA_AutoRetargetSetup& OutSetup)
+    {
+        const EFRA_SkeletonFamily SourceFamily = DetectSkeletonFamily(SourceMesh);
+        const EFRA_SkeletonFamily TargetFamily = DetectSkeletonFamily(TargetMesh);
+        const FName SourceRoot = GetDirectionalRetargetRoot(SourceMesh, SourceFamily);
+        const FName TargetRoot = GetDirectionalRetargetRoot(TargetMesh, TargetFamily);
+
+        OutSetup.SourceSkeletonFamily = SkeletonFamilyToString(SourceFamily);
+        OutSetup.TargetSkeletonFamily = SkeletonFamilyToString(TargetFamily);
+        OutSetup.SourceRetargetRoot = SourceRoot.IsNone() ? TEXT("None") : SourceRoot.ToString();
+        OutSetup.TargetRetargetRoot = TargetRoot.IsNone() ? TEXT("None") : TargetRoot.ToString();
+        OutSetup.RootFamilyPolicy = TEXT("Exact Automap");
+        OutSetup.RootChainMapping = TEXT("Exact");
+        OutSetup.PelvisChainMapping = TEXT("Exact");
+
+        if (SourceFamily == EFRA_SkeletonFamily::UEMannequin && TargetFamily == EFRA_SkeletonFamily::Mixamo)
+        {
+            Controller->SetSourceChain(NAME_None, FName(TEXT("Root")));
+            OutSetup.RootFamilyPolicy = TEXT("UEMannequin -> Mixamo");
+            OutSetup.RootChainMapping = TEXT("Target Chain Root -> Source Chain None");
+            OutSetup.PelvisChainMapping = TEXT("Exact");
+            OutSetup.ChainMappingSummary = TEXT("Applied UE->Mixamo root-family policy after Exact Automap: Target Chain Root is mapped to Source Chain None; pelvis/hips mapping remains exact.");
+            OutSetup.Messages.Add(TEXT("Applied UE->Mixamo root-family policy: Target Chain Root mapped to None to avoid global root double transform."));
+            return;
+        }
+
+        if (SourceFamily == EFRA_SkeletonFamily::Mixamo && TargetFamily == EFRA_SkeletonFamily::UEMannequin)
+        {
+            Controller->SetSourceChain(NAME_None, FName(TEXT("Pelvis")));
+            Controller->SetSourceChain(NAME_None, FName(TEXT("Root")));
+            OutSetup.RootFamilyPolicy = TEXT("Mixamo -> UEMannequin");
+            OutSetup.RootChainMapping = TEXT("Target Chain Root -> Source Chain None");
+            OutSetup.PelvisChainMapping = TEXT("Target Chain Pelvis -> Source Chain None");
+            OutSetup.ChainMappingSummary = TEXT("Applied Mixamo->UE root-family policy after Exact Automap: Target Chain Pelvis and unreliable Root are mapped to Source Chain None to avoid double transforms.");
+            OutSetup.Messages.Add(TEXT("Applied Mixamo->UE root-family policy: Target Chain Pelvis mapped to None to avoid pelvis double transform."));
+            return;
+        }
+
+        if (SourceFamily == EFRA_SkeletonFamily::UEMannequin && TargetFamily == EFRA_SkeletonFamily::UEMannequin)
+        {
+            OutSetup.RootFamilyPolicy = TEXT("UEMannequin -> UEMannequin");
+            OutSetup.RootChainMapping = TEXT("Target Chain Root -> Source Chain Root");
+            OutSetup.PelvisChainMapping = TEXT("Target Chain Pelvis -> Source Chain Pelvis");
+            OutSetup.ChainMappingSummary = TEXT("Applied UE->UE root-family policy: Root and Pelvis remain exact; no None override was applied.");
+            OutSetup.Messages.Add(TEXT("Applied UE->UE root-family policy: Root and Pelvis remain exact."));
+            return;
+        }
+
+        if (SourceFamily == EFRA_SkeletonFamily::Mixamo && TargetFamily == EFRA_SkeletonFamily::Mixamo)
+        {
+            Controller->SetSourceChain(NAME_None, FName(TEXT("Root")));
+            OutSetup.RootFamilyPolicy = TEXT("Mixamo -> Mixamo");
+            OutSetup.RootChainMapping = TEXT("Target Chain Root -> Source Chain None");
+            OutSetup.PelvisChainMapping = TEXT("Exact");
+            OutSetup.ChainMappingSummary = TEXT("Applied Mixamo->Mixamo root-family policy after Exact Automap: Target Chain Root is mapped to Source Chain None; hips/pelvis mapping remains exact.");
+            OutSetup.Messages.Add(TEXT("Applied Mixamo->Mixamo root-family policy: Target Chain Root mapped to None."));
+            return;
+        }
+
+        OutSetup.RootFamilyPolicy = TEXT("GenericHumanoid / Unknown");
+        OutSetup.RootChainMapping = TEXT("Exact");
+        OutSetup.PelvisChainMapping = TEXT("Exact");
+        OutSetup.ChainMappingSummary = TEXT("Generic/Unknown skeleton family detected; no root-family None override was applied after Exact Automap.");
+        OutSetup.Messages.Add(TEXT("Generic/Unknown skeleton family detected; no root-family None override applied."));
     }
     void AddGeneratedChain(UIKRigController* Controller, const USkeletalMesh* Mesh, TArray<FString>& Messages, const TCHAR* ChainName, std::initializer_list<const TCHAR*> StartBones, std::initializer_list<const TCHAR*> EndBones)
     {
@@ -309,6 +446,18 @@ namespace
         {
             if (!bRecreateExisting)
             {
+                UIKRigController* ExistingController = UIKRigController::GetController(Existing);
+                const EFRA_SkeletonFamily ExistingFamily = DetectSkeletonFamily(Mesh);
+                const FName ExistingRetargetRoot = GetDirectionalRetargetRoot(Mesh, ExistingFamily);
+                if (ExistingController && ExistingController->SetSkeletalMesh(Mesh) && ExistingRetargetRoot != NAME_None)
+                {
+                    ExistingController->SetRetargetRoot(ExistingRetargetRoot);
+                    if (!SaveAsset(Existing, OutError))
+                    {
+                        return nullptr;
+                    }
+                    OutSetup.Messages.Add(FString::Printf(TEXT("Updated generated IK Rig retarget root for %s: %s"), *AssetName, *ExistingRetargetRoot.ToString()));
+                }
                 OutSetup.Messages.Add(FString::Printf(TEXT("Reusing existing generated IK Rig: %s"), *Existing->GetPathName()));
                 return Existing;
             }
@@ -347,7 +496,8 @@ namespace
             }
         }
 
-        const FName RetargetRoot = FirstExistingBoneFlexible(Mesh, {TEXT("pelvis"), TEXT("Hips"), TEXT("hips"), TEXT("hip"), TEXT("root")});
+        const EFRA_SkeletonFamily Family = DetectSkeletonFamily(Mesh);
+        const FName RetargetRoot = GetDirectionalRetargetRoot(Mesh, Family);
         if (RetargetRoot != NAME_None)
         {
             Controller->SetRetargetRoot(RetargetRoot);
@@ -405,15 +555,11 @@ namespace
             Controller->SetPreviewMesh(ERetargetSourceOrTarget::Target, TargetMesh);
             Controller->AutoMapChains(EAutoMapChainType::Exact, true);
             Controller->CleanAsset();
-            if (ShouldApplyMixamoToUEPreset(SourceMesh, TargetMesh))
-            {
-                Controller->SetSourceChain(NAME_None, FName(TEXT("Pelvis")));
-                OutSetup.Messages.Add(TEXT("Target Chain Pelvis intentionally mapped to Source Chain None for Mixamo -> UE stability."));
-            }
 
             const FName TargetPoseName = Controller->GetCurrentRetargetPoseName(ERetargetSourceOrTarget::Target);
             Controller->ResetRetargetPose(TargetPoseName, TArray<FName>(), ERetargetSourceOrTarget::Target);
             Controller->AutoAlignAllBones(ERetargetSourceOrTarget::Target);
+            ApplyDirectionalRootFamilyOverrides(Controller, SourceMesh, TargetMesh, OutSetup);
         }
 
         FAssetRegistryModule::AssetCreated(Retargeter);
@@ -422,7 +568,7 @@ namespace
             return false;
         }
 
-        OutSetup.Messages.Add(TEXT("Configured generated IK Retargeter with exact chain mapping and target Auto Align."));
+        OutSetup.Messages.Add(TEXT("Configured generated IK Retargeter with Exact Automap, target Auto Align, and directional root-family policy."));
         return true;
     }
 
@@ -432,6 +578,11 @@ namespace
         {
             if (!bRecreateExisting)
             {
+                if (!ConfigureGeneratedRetargeter(Existing, SourceIKRig, TargetIKRig, SourceMesh, TargetMesh, OutSetup, OutError))
+                {
+                    return nullptr;
+                }
+                OutSetup.Messages.Add(FString::Printf(TEXT("Reused and updated generated IK Retargeter: %s"), *Existing->GetPathName()));
                 OutSetup.Messages.Add(FString::Printf(TEXT("Reusing existing generated IK Retargeter: %s"), *Existing->GetPathName()));
                 return Existing;
             }
@@ -483,6 +634,7 @@ bool FFX_RetargetAssistantSetupManager::PrepareAutoRetargetSetup(USkeletalMesh* 
     const FString SourceIKRigName = FString::Printf(TEXT("IK_%s"), *SourceName);
     const FString TargetIKRigName = FString::Printf(TEXT("IK_%s"), *TargetName);
     const FString RetargeterName = FString::Printf(TEXT("RTG_%s"), *PairName);
+    InitializeRootPolicySummary(SourceMesh, TargetMesh, OutSetup);
 
     UIKRigDefinition* SourceIKRig = CreateOrLoadGeneratedIKRig(SourceMesh, FString::Printf(TEXT("%s/%s"), *SetupFolder, *SourceIKRigName), SourceIKRigName, OutSetup, OutError, bRecreateExisting);
     if (!SourceIKRig)

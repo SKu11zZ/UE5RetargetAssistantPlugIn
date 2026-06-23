@@ -58,6 +58,14 @@ private:
     FString GeneratedSourceIKRigPath;
     FString GeneratedTargetIKRigPath;
     FString GeneratedRetargeterPath;
+    FString LastRootFamilyPolicy;
+    FString LastSourceSkeletonFamily;
+    FString LastTargetSkeletonFamily;
+    FString LastSourceRetargetRoot;
+    FString LastTargetRetargetRoot;
+    FString LastRootChainMapping;
+    FString LastPelvisChainMapping;
+    FString LastChainMappingSummary;
     TArray<FString> LastSetupWarnings;
 
     TSharedPtr<SEditableTextBox> OutputFolderTextBox;

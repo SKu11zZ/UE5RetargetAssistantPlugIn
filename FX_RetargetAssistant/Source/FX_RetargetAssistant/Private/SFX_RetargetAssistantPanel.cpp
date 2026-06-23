@@ -448,6 +448,14 @@ FReply SFX_RetargetAssistantPanel::AutoCreateSetup()
     GeneratedSourceIKRigPath = Setup.SourceIKRig.ToSoftObjectPath().ToString();
     GeneratedTargetIKRigPath = Setup.TargetIKRig.ToSoftObjectPath().ToString();
     GeneratedRetargeterPath = Setup.Retargeter.ToSoftObjectPath().ToString();
+    LastRootFamilyPolicy = Setup.RootFamilyPolicy;
+    LastSourceSkeletonFamily = Setup.SourceSkeletonFamily;
+    LastTargetSkeletonFamily = Setup.TargetSkeletonFamily;
+    LastSourceRetargetRoot = Setup.SourceRetargetRoot;
+    LastTargetRetargetRoot = Setup.TargetRetargetRoot;
+    LastRootChainMapping = Setup.RootChainMapping;
+    LastPelvisChainMapping = Setup.PelvisChainMapping;
+    LastChainMappingSummary = Setup.ChainMappingSummary;
     LastSetupWarnings.Reset();
 
     bool bMissingChains = false;
@@ -460,7 +468,9 @@ FReply SFX_RetargetAssistantPanel::AutoCreateSetup()
             bMissingChains = true;
             LastSetupWarnings.Add(Message);
         }
-        else if (Message.Contains(TEXT("Target Chain Pelvis intentionally")))
+        else if (Message.Contains(TEXT("Target Chain Pelvis intentionally"))
+            || Message.Contains(TEXT("Target Chain Root mapped to None"))
+            || Message.Contains(TEXT("Target Chain Pelvis mapped to None")))
         {
             LastSetupWarnings.Add(Message);
         }
@@ -499,6 +509,14 @@ FReply SFX_RetargetAssistantPanel::RecreateGeneratedSetup()
     GeneratedSourceIKRigPath = Setup.SourceIKRig.ToSoftObjectPath().ToString();
     GeneratedTargetIKRigPath = Setup.TargetIKRig.ToSoftObjectPath().ToString();
     GeneratedRetargeterPath = Setup.Retargeter.ToSoftObjectPath().ToString();
+    LastRootFamilyPolicy = Setup.RootFamilyPolicy;
+    LastSourceSkeletonFamily = Setup.SourceSkeletonFamily;
+    LastTargetSkeletonFamily = Setup.TargetSkeletonFamily;
+    LastSourceRetargetRoot = Setup.SourceRetargetRoot;
+    LastTargetRetargetRoot = Setup.TargetRetargetRoot;
+    LastRootChainMapping = Setup.RootChainMapping;
+    LastPelvisChainMapping = Setup.PelvisChainMapping;
+    LastChainMappingSummary = Setup.ChainMappingSummary;
     LastSetupWarnings.Reset();
 
     bool bMissingChains = false;
@@ -511,7 +529,9 @@ FReply SFX_RetargetAssistantPanel::RecreateGeneratedSetup()
             bMissingChains = true;
             LastSetupWarnings.Add(Message);
         }
-        else if (Message.Contains(TEXT("Target Chain Pelvis intentionally")))
+        else if (Message.Contains(TEXT("Target Chain Pelvis intentionally"))
+            || Message.Contains(TEXT("Target Chain Root mapped to None"))
+            || Message.Contains(TEXT("Target Chain Pelvis mapped to None")))
         {
             LastSetupWarnings.Add(Message);
         }
@@ -594,7 +614,14 @@ FReply SFX_RetargetAssistantPanel::ExecuteBatchRetarget()
     Report.GeneratedSourceIKRigPath = GeneratedSourceIKRigPath;
     Report.GeneratedTargetIKRigPath = GeneratedTargetIKRigPath;
     Report.GeneratedRetargeterPath = GeneratedRetargeterPath;
-    Report.ChainMappingSummary = IsSelectedRetargeterGenerated() ? TEXT("Generated setup uses exact chain mapping. Mixamo -> UE preset maps Target Chain Pelvis to Source Chain None for stability when detected.") : TEXT("Manual/user-provided Retargeter used as-is; no mapping changes were made by Retarget & Export.");
+    Report.RootFamilyPolicy = IsSelectedRetargeterGenerated() ? LastRootFamilyPolicy : TEXT("Manual/user-provided Retargeter");
+    Report.SourceSkeletonFamily = IsSelectedRetargeterGenerated() ? LastSourceSkeletonFamily : TEXT("Unknown");
+    Report.TargetSkeletonFamily = IsSelectedRetargeterGenerated() ? LastTargetSkeletonFamily : TEXT("Unknown");
+    Report.SourceRetargetRoot = IsSelectedRetargeterGenerated() ? LastSourceRetargetRoot : TEXT("Unknown");
+    Report.TargetRetargetRoot = IsSelectedRetargeterGenerated() ? LastTargetRetargetRoot : TEXT("Unknown");
+    Report.RootChainMapping = IsSelectedRetargeterGenerated() ? LastRootChainMapping : TEXT("User Retargeter used as-is");
+    Report.PelvisChainMapping = IsSelectedRetargeterGenerated() ? LastPelvisChainMapping : TEXT("User Retargeter used as-is");
+    Report.ChainMappingSummary = IsSelectedRetargeterGenerated() ? LastChainMappingSummary : TEXT("Manual/user-provided Retargeter used as-is; no mapping changes were made by Retarget & Export.");
     Report.ConflictPolicy = TEXT("Create Unique Name");
     Report.Warnings = LastSetupWarnings;
     

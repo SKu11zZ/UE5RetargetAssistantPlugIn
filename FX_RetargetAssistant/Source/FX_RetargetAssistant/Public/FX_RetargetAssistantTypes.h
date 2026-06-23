@@ -73,6 +73,13 @@ struct FFRA_BatchRetargetReport
     FString GeneratedSourceIKRigPath;
     FString GeneratedTargetIKRigPath;
     FString GeneratedRetargeterPath;
+    FString RootFamilyPolicy;
+    FString SourceSkeletonFamily;
+    FString TargetSkeletonFamily;
+    FString SourceRetargetRoot;
+    FString TargetRetargetRoot;
+    FString RootChainMapping;
+    FString PelvisChainMapping;
     FString ChainMappingSummary;
     TArray<FString> Warnings;
     FString OutputFolder;

@@ -57,6 +57,13 @@ bool FFX_RetargetAssistantReportWriter::WriteReport(const FFRA_BatchRetargetRepo
     Root->SetStringField(TEXT("generatedSourceIKRig"), Report.GeneratedSourceIKRigPath);
     Root->SetStringField(TEXT("generatedTargetIKRig"), Report.GeneratedTargetIKRigPath);
     Root->SetStringField(TEXT("generatedRetargeter"), Report.GeneratedRetargeterPath);
+    Root->SetStringField(TEXT("rootFamilyPolicy"), Report.RootFamilyPolicy);
+    Root->SetStringField(TEXT("sourceSkeletonFamily"), Report.SourceSkeletonFamily);
+    Root->SetStringField(TEXT("targetSkeletonFamily"), Report.TargetSkeletonFamily);
+    Root->SetStringField(TEXT("sourceRetargetRoot"), Report.SourceRetargetRoot);
+    Root->SetStringField(TEXT("targetRetargetRoot"), Report.TargetRetargetRoot);
+    Root->SetStringField(TEXT("rootChainMapping"), Report.RootChainMapping);
+    Root->SetStringField(TEXT("pelvisChainMapping"), Report.PelvisChainMapping);
     Root->SetStringField(TEXT("chainMappingSummary"), Report.ChainMappingSummary);
     Root->SetStringField(TEXT("outputFolder"), Report.OutputFolder);
 

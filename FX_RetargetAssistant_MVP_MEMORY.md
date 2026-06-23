@@ -726,3 +726,80 @@ Remaining Closure matrix:
 - Source Mesh changed clears animations.
 - Add Selected filters wrong Skeleton assets.
 - Open Retargeter, manually adjust, then export.
+
+## Phase 26 - Root Family Directional Policy (2026-06-23)
+
+Status: implemented, synced to FXRA54, compiled in UE5.4, and smoke tested for Mixamo -> UE TestSet Preflight. Visual closure still needed for Mixamo -> UE Manny and UE Mannequin -> Mixamo.
+
+User feedback:
+- UE Mannequin animation retargeted to Mixamo caused floating / global rotation when Target Chain `Root` mapped to Source Chain `Root`.
+- Manually setting Target Chain `Root` to Source Chain `None` fixed the result.
+- This belongs to the same family as the earlier Mixamo -> UE fix where Target Chain `Pelvis` needed Source Chain `None` to avoid body shaking.
+
+Implemented:
+- Added skeleton family detection:
+  - `UEMannequin`: `root`, `pelvis`, `spine_01`, `clavicle_l`, `upperarm_l`, `thigh_l`, etc.
+  - `Mixamo`: `Hips`, `Spine`, `LeftArm`, `LeftForeArm`, `LeftUpLeg`, `LeftLeg`, `LeftFoot`, including `mixamorig:` / `mixamorig_` prefixes.
+  - fallback: `GenericHumanoid` / `Unknown`.
+- Generated IK Rig retarget roots now use directional family rules:
+  - UEMannequin: `pelvis`
+  - Mixamo: `Hips`
+  - fallback: pelvis/Hips/hip/root priority.
+- Generated Retargeter setup order is now:
+  1. Set Source/Target IK Rig
+  2. Set Source/Target preview mesh
+  3. Exact Chain Automap
+  4. CleanAsset
+  5. Reset target retarget pose
+  6. Auto Align target pose
+  7. ApplyDirectionalRootFamilyOverrides
+  8. Save generated Retargeter
+- Auto Create now updates existing plugin-generated IK Rigs and Retargeters with current directional policy, while still only touching assets under `/Game/FX_RetargetAssistant/Setups/`.
+- Recreate and Auto Repair also go through the same policy path.
+
+Directional root-family policies:
+- `UEMannequin -> Mixamo`
+  - Source Retarget Root = `pelvis`
+  - Target Retarget Root = `Hips`
+  - Target Chain `Root` -> Source Chain `None`
+  - Pelvis/Hips mapping remains exact.
+  - Log: `Applied UE->Mixamo root-family policy: Target Chain Root mapped to None to avoid global root double transform.`
+- `Mixamo -> UEMannequin`
+  - Source Retarget Root = `Hips`
+  - Target Retarget Root = `pelvis`
+  - Target Chain `Pelvis` -> Source Chain `None`
+  - Target Chain `Root` -> Source Chain `None` for unreliable Mixamo root.
+  - Log: `Applied Mixamo->UE root-family policy: Target Chain Pelvis mapped to None to avoid pelvis double transform.`
+- `UEMannequin -> UEMannequin`
+  - Root -> Root
+  - Pelvis -> Pelvis
+  - No None override.
+- `Mixamo -> Mixamo`
+  - Retarget Root uses `Hips`.
+  - Target Chain `Root` -> Source Chain `None`.
+  - Hips/Pelvis mapping remains exact.
+
+Report.json additions:
+- `rootFamilyPolicy`
+- `sourceSkeletonFamily`
+- `targetSkeletonFamily`
+- `sourceRetargetRoot`
+- `targetRetargetRoot`
+- `rootChainMapping`
+- `pelvisChainMapping`
+- `chainMappingSummary`
+
+Safety boundary:
+- User-selected/manual Retargeters outside `/Game/FX_RetargetAssistant/Setups/` are still read-only.
+- Auto Repair still only warns for user assets and does not modify or save them.
+
+Verification:
+- Synced plugin source to `F:\Unreal Projects\FXRA54\Plugins\FX_RetargetAssistant`.
+- Built `FXRA54Editor` successfully with UE5.4 and MSVC 14.38.
+- Ran smoke test commandlet successfully:
+  - Mixamo -> UE5 Manny TestSet prepared.
+  - Preflight passed for 3 animation(s).
+
+Required visual checks:
+- Mixamo -> UE Manny: confirm Target Chain `Pelvis=None` and no shaking.
+- UE Mannequin -> Mixamo: confirm Target Chain `Root=None` and no floating/global rotation.
