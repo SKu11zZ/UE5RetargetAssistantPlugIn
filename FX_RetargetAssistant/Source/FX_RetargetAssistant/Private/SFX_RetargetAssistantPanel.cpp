@@ -376,7 +376,8 @@ FReply SFX_RetargetAssistantPanel::LoadMixamoTestSet()
     FString Error;
     if (!FFX_RetargetAssistantSetupManager::PrepareMixamoToUE5MannyTestSet(TestSet, Error))
     {
-        AppendLog(EFRA_LogSeverity::Error, Error);
+        AppendLog(EFRA_LogSeverity::Warning, TEXT("Required test assets are missing in FXRA58. Please import or migrate test assets."));
+        AppendLog(EFRA_LogSeverity::Warning, Error);
         return FReply::Handled();
     }
 

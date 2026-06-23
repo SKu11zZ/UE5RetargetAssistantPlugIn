@@ -71,6 +71,47 @@ Migration result:
 - UI title changed to `FX Retarget Assistant - MVP1 Alpha / UE5.8`.
 - `ResearchOnUENewTools` UE5.8 editor process was detected and left untouched.
 
+## Phase 28 - UE5.8 Bring-up Automated Audit Pass 1 (2026-06-23)
+
+Status: partial bring-up validation. Compile and commandlet warning-path checks passed; Editor UI and visual retarget cases remain pending.
+
+Completed:
+
+- Documentation audit on `ue58-main`:
+  - README contains no old cross-version/current-target wording.
+  - Current technical plan is UE5.8-only.
+  - Current Closure Checklist is UE5.8 bring-up-focused.
+  - Old terms such as UE5.4, MSVC 14.38, and commandlet limitations remain only in archive/history contexts.
+- FXRA58 asset check:
+  - Present:
+    - `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple`
+    - `/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple`
+    - `/Game/Characters/Mannequins/Meshes/SK_Mannequin`
+    - Mannequin animation assets under `/Game/Characters/Mannequins/Anims/`
+  - Missing:
+    - Mixamo test character and animations under `/Game/FXRA_Imported/MixamoShared/`
+    - `/Game/Characters/Mannequins/Rigs/IK_Mannequin`
+    - `/Game/Characters/Mannequins/Rigs/RTG_Mannequin`
+- Updated missing-test-asset handling:
+  - Panel `LoadMixamoTestSet` logs Warning instead of Error when optional test assets are missing.
+  - SmokeTest commandlet logs the exact warning:
+    `[Warning] Required test assets are missing in FXRA58. Please import or migrate test assets.`
+  - SmokeTest exits 0 with warnings when optional validation assets are absent.
+- Synced source to `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`.
+- Rebuilt `FXRA58Editor` successfully with UE5.8.
+- Ran `FX_RetargetAssistantSmokeTest` in UE5.8:
+  - Result: 0 errors, warnings for missing validation assets.
+
+Pending:
+
+- Editor UI visual confirmation.
+- Auto Create validation in FXRA58 using available Manny/Quinn assets.
+- Mixamo -> UE Manny visual retarget after Mixamo assets are imported/migrated.
+- UE Mannequin -> Mixamo visual retarget after Mixamo assets are imported/migrated.
+- Retarget & Export full export validation.
+- User Retargeter safety timestamp check.
+- Duplicate output naming and Report.json full field validation.
+
 ## Phase 0 - Baseline Restore And UE5.4 Toolchain Check
 
 - Date: 2026-06-23

@@ -51,6 +51,38 @@ Notes:
 - Final result succeeded.
 - `ResearchOnUENewTools` was left running and was not closed or modified.
 
+## UE5.8 Bring-up Pass 1
+
+Result: partial pass.
+
+Build command still succeeds after the missing-test-asset warning-path update.
+
+Smoke test command:
+
+```powershell
+& 'F:\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' 'F:\Unreal Projects\FXRA58\FXRA58.uproject' -run=FX_RetargetAssistantSmokeTest -unattended -nop4 -nullrhi -log
+```
+
+Observed result:
+
+- 0 errors.
+- Expected warnings because FXRA58 currently lacks the optional Mixamo validation assets and old UE5.4-style `IK_Mannequin` path.
+- The tool logs:
+  `[Warning] Required test assets are missing in FXRA58. Please import or migrate test assets.`
+
+FXRA58 currently has:
+
+- `SKM_Manny_Simple`
+- `SKM_Quinn_Simple`
+- `SK_Mannequin`
+- Mannequin animation assets under `/Game/Characters/Mannequins/Anims/`
+
+FXRA58 currently lacks:
+
+- `/Game/FXRA_Imported/MixamoShared/Center_Block`
+- `/Game/Characters/Mannequins/Rigs/IK_Mannequin`
+- `/Game/Characters/Mannequins/Rigs/RTG_Mannequin`
+
 ## Archived UE5.4 Notes
 
 The UE5.4 packaging and commandlet notes are historical only.

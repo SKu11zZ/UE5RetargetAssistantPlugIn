@@ -263,6 +263,6 @@ Walk_RTG_002
 - UE5.5 兼容
 - UE5.6 兼容
 - UE5.7 兼容
-- VersionBridge 扩展
+- 跨版本桥接层扩展
 - 多版本 BuildPlugin 包
 - 5.4 commandlet workaround
