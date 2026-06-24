@@ -80,6 +80,28 @@ namespace
 
         return nullptr;
     }
+
+    FString MakeObjectPath(const FString& OutputPackagePath, const FString& AssetName)
+    {
+        return FString::Printf(TEXT("%s/%s.%s"), *OutputPackagePath, *AssetName, *AssetName);
+    }
+
+    FString MakeUniqueAssetName(const FString& OutputPackagePath, const FString& BaseAssetName, const TSet<FString>& ExistingObjectPaths, bool bOverwriteExisting)
+    {
+        if (bOverwriteExisting)
+        {
+            return BaseAssetName;
+        }
+
+        FString Candidate = BaseAssetName;
+        int32 Counter = 1;
+        while (ExistingObjectPaths.Contains(MakeObjectPath(OutputPackagePath, Candidate)))
+        {
+            Candidate = FString::Printf(TEXT("%s_%03d"), *BaseAssetName, Counter);
+            ++Counter;
+        }
+        return Candidate;
+    }
 }
 
 bool FFX_RetargetAssistantBatchExporter::Run(const FFRA_BatchRetargetInput& Input, const FFRA_PreflightResult& Preflight, FFRA_BatchRetargetReport& OutReport)
@@ -137,8 +159,9 @@ bool FFX_RetargetAssistantBatchExporter::Run(const FFRA_BatchRetargetInput& Inpu
             continue;
         }
 
-        const FString OutputAssetName = SourceAnimSequence->GetName() + Input.Suffix;
-        Item.OutputAnimationPath = FString::Printf(TEXT("%s/%s.%s"), *OutputPackagePath, *OutputAssetName, *OutputAssetName);
+        const FString BaseOutputAssetName = SourceAnimSequence->GetName() + Input.Suffix;
+        const FString OutputAssetName = MakeUniqueAssetName(OutputPackagePath, BaseOutputAssetName, ExistingObjectPaths, Input.bOverwriteExisting);
+        Item.OutputAnimationPath = MakeObjectPath(OutputPackagePath, OutputAssetName);
 
         FIKRetargetBatchOperationContext Context;
         Context.AssetsToRetarget.Add(SourceAnimSequence);
@@ -181,6 +204,7 @@ bool FFX_RetargetAssistantBatchExporter::Run(const FFRA_BatchRetargetInput& Inpu
         Item.OutputAnimationPath = GeneratedAnimSequence->GetPathName();
         Item.Message = TEXT("");
         OutReport.Items.Add(Item);
+        ExistingObjectPaths.Add(GeneratedAnimSequence->GetPathName());
         ++OutReport.SuccessCount;
     }
 

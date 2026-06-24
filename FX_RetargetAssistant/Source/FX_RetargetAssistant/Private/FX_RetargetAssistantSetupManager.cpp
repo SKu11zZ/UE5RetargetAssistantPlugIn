@@ -7,6 +7,8 @@
 #include "Misc/PackageName.h"
 #include "RetargetEditor/IKRetargeterController.h"
 #include "Retargeter/IKRetargeter.h"
+#include "Retargeter/RetargetOps/PelvisMotionOp.h"
+#include "Retargeter/RetargetOps/RootMotionGeneratorOp.h"
 #include "Rig/IKRigDefinition.h"
 #include "RigEditor/IKRigController.h"
 #include "UObject/Package.h"
@@ -359,6 +361,45 @@ namespace
         OutSetup.ChainMappingSummary = TEXT("Generated setup uses exact chain mapping with directional root-family overrides when a supported skeleton-family direction is detected.");
     }
 
+    void ConfigureUeToMixamoRootMotionOps(const UIKRetargeterController* Controller, const FName SourcePelvis, const FName TargetHips, FFRA_AutoRetargetSetup& OutSetup)
+    {
+        if (!Controller || SourcePelvis.IsNone() || TargetHips.IsNone())
+        {
+            OutSetup.Messages.Add(TEXT("Skipped UE->Mixamo Root/Pelvis Motion Op tuning because a required pelvis/hips bone was not found."));
+            return;
+        }
+
+        bool bConfiguredPelvisMotion = false;
+        bool bConfiguredRootMotion = false;
+        UIKRetargeterController* MutableController = const_cast<UIKRetargeterController*>(Controller);
+        for (int32 OpIndex = 0; OpIndex < Controller->GetNumRetargetOps(); ++OpIndex)
+        {
+            UIKRetargetOpControllerBase* OpController = MutableController->GetOpController(OpIndex);
+            if (UIKRetargetPelvisMotionController* PelvisController = Cast<UIKRetargetPelvisMotionController>(OpController))
+            {
+                PelvisController->SetSourcePelvisBone(SourcePelvis);
+                PelvisController->SetTargetPelvisBone(TargetHips);
+                bConfiguredPelvisMotion = true;
+                continue;
+            }
+
+            if (UIKRetargetRootMotionController* RootController = Cast<UIKRetargetRootMotionController>(OpController))
+            {
+                RootController->SetSourceRootBone(SourcePelvis);
+                RootController->SetTargetRootBone(TargetHips);
+                RootController->SetTargetPelvisBone(TargetHips);
+                bConfiguredRootMotion = true;
+            }
+        }
+
+        OutSetup.Messages.Add(FString::Printf(
+            TEXT("UE->Mixamo Root/Pelvis Motion Ops configured: PelvisMotion=%s RootMotion=%s SourcePelvis=%s TargetHips=%s. Root Motion enum settings use UE5.8 defaults because the settings struct is not safely linkable from the plugin module."),
+            bConfiguredPelvisMotion ? TEXT("true") : TEXT("false"),
+            bConfiguredRootMotion ? TEXT("true") : TEXT("false"),
+            *SourcePelvis.ToString(),
+            *TargetHips.ToString()));
+    }
+
     void ApplyDirectionalRootFamilyOverrides(const UIKRetargeterController* Controller, USkeletalMesh* SourceMesh, USkeletalMesh* TargetMesh, FFRA_AutoRetargetSetup& OutSetup)
     {
         const EFRA_SkeletonFamily SourceFamily = DetectSkeletonFamily(SourceMesh);
@@ -377,11 +418,13 @@ namespace
         if (SourceFamily == EFRA_SkeletonFamily::UEMannequin && TargetFamily == EFRA_SkeletonFamily::Mixamo)
         {
             Controller->SetSourceChain(NAME_None, FName(TEXT("Root")));
+            Controller->SetSourceChain(NAME_None, FName(TEXT("Pelvis")));
+            ConfigureUeToMixamoRootMotionOps(Controller, SourceRoot, TargetRoot, OutSetup);
             OutSetup.RootFamilyPolicy = TEXT("UEMannequin -> Mixamo");
             OutSetup.RootChainMapping = TEXT("Target Chain Root -> Source Chain None");
-            OutSetup.PelvisChainMapping = TEXT("Exact");
-            OutSetup.ChainMappingSummary = TEXT("Applied UE->Mixamo root-family policy after Exact Automap: Target Chain Root is mapped to Source Chain None; pelvis/hips mapping remains exact.");
-            OutSetup.Messages.Add(TEXT("Applied UE->Mixamo root-family policy: Target Chain Root mapped to None to avoid global root double transform."));
+            OutSetup.PelvisChainMapping = TEXT("Target Chain Pelvis/Hips -> Source Chain None");
+            OutSetup.ChainMappingSummary = TEXT("Applied UE->Mixamo root-family policy after Exact Automap: Target Chain Root and Pelvis/Hips are mapped to Source Chain None so Mixamo Hips is driven by Pelvis Motion / Root Motion Ops instead of FK chain mapping.");
+            OutSetup.Messages.Add(TEXT("Applied UE->Mixamo root-family policy: Target Chain Root and Pelvis/Hips mapped to None to avoid Mixamo Hips double-driving."));
             return;
         }
 

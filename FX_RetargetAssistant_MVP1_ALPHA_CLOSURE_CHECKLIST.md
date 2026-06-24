@@ -160,25 +160,100 @@ Closure guardrails:
   - `retargetOpsStackCount`
   - `retargetOpsStackOpTypeNames`
 
+## UE5.8 Functional Validation Pass
+
+Status: automated pass + human visual validation pass. Current stage: `FX_RetargetAssistant MVP1 Alpha / UE5.8 Functional Validation Passed / Alpha Closure Passed`.
+
+Commandlet:
+
+```text
+UnrealEditor-Cmd.exe FXRA58.uproject -run=FX_RetargetAssistantSmokeTest -FunctionalValidation -unattended -nop4 -nullrhi -log
+```
+
+Latest validation output:
+
+```text
+/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_142733/
+```
+
+Resolved human visual failure:
+
+- Failed asset:
+  `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_142733/Manny_to_Mixamo/MF_Unarmed_Walk_Fwd_Right_RTG`
+- Symptom:
+  Manny -> Mixamo exported animation shows root-family deformation: body motion is not correct, pelvis/Hips is pulled away, and visible mesh tearing occurs.
+- Resolution:
+  UE->Mixamo root-family policy now maps Target Chain `Root` and Target Chain `Pelvis/Hips` to Source Chain `None`.
+- Current status:
+  `UE5.8 Functional Validation automated PASS + human visual validation PASS.`
+
+Automated pass result:
+
+- `FXRA FUNCTIONAL VALIDATION RESULT: PASS failures=0`
+- `REOPEN_VALIDATION PASS`
+- Generated IK Rig / Retargeter / AnimSequence assets loaded in a fresh UE commandlet process.
+- Report.json required fields were present.
+- `retargetOpsStackValid=true`; `retargetOpsStackCount` and `retargetOpsStackOpTypeNames` recorded.
+
+Bug fixed during validation:
+
+- Duplicate export names now use plugin-controlled naming:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG_001`
+  - `Hip_Hop_Dancing_Anim_RTG_002`
+- The previous UE default `RTG1` / `RTG2` style is no longer used by the plugin exporter.
+
 ## UE5.8 First Test Matrix
 
 | Case | Status | Expected Result |
 | --- | --- | --- |
-| Mixamo -> UE Manny | Pending | `Pelvis=None`; no pelvis/body shaking. |
-| UE Mannequin -> Mixamo | Pending | `Root=None`; no floating/global rotation. |
-| Manny -> Quinn | Pending | UE -> UE keeps Root/Pelvis exact; no None special rule. |
-| Manual Mode / Use Existing Retargeter | Pending | User Retargeter is not modified. |
-| Auto Repair IK Mapping | Pending | Only repairs `/Game/FX_RetargetAssistant/Setups/`; user Retargeter gets Warning only. |
-| Recreate Generated Setup | Pending | Only clears/rebuilds plugin-generated assets. |
-| Duplicate output names | Pending | Generates `_001`, `_002`; no overwrite. |
-| Open Retargeter -> manual adjust -> export | Pending | User fine-tuned generated Retargeter exports correctly. |
-| Reopen UE5.8 project | Pending | Generated IK Rig / Retargeter / AnimSequence reload. |
+| Mixamo -> UE Manny | Passed | `Pelvis=None`; no pelvis/body shaking. |
+| UE Mannequin -> Mixamo | Passed | `Root=None` and `Pelvis/Hips=None`; no tearing, floating, or global rotation. |
+| Manny -> Quinn | Passed | UE -> UE keeps Root/Pelvis exact; no None special rule. |
+| Manual Mode / Use Existing Retargeter | Automated Pass | User Retargeter is not modified. |
+| Auto Repair IK Mapping | Automated Pass | Only repairs `/Game/FX_RetargetAssistant/Setups/`; user Retargeter gets Warning only. |
+| Recreate Generated Setup | Automated Pass | Only clears/rebuilds plugin-generated assets. |
+| Duplicate output names | Passed | Generates `_001`, `_002`; no overwrite. |
+| Open Retargeter -> manual adjust -> export | Policy Pass / Manual Visual Pending | Auto Create reuse path preserves existing generated RTG; user fine-tuned generated Retargeter can be exported without forced rebuild. |
+| Reopen UE5.8 project | Passed | Generated IK Rig / Retargeter / AnimSequence reload. |
 
 ## Root Family Directional Policy
 
-- `UEMannequin -> Mixamo`: Target Chain `Root=None`.
+- `UEMannequin -> Mixamo`: Target Chain `Root=None`; Target Chain `Pelvis/Hips=None`. Mixamo `Hips` is driven by UE5.8 Pelvis Motion / Root Motion Ops, not normal FK chain mapping.
 - `Mixamo -> UEMannequin`: Target Chain `Pelvis=None`; Target Chain `Root=None`.
 - `UEMannequin -> UEMannequin`: Root and Pelvis remain exact.
 - `Mixamo -> Mixamo`: Retarget Root uses `Hips`; Root defaults to `None`.
 
 These rules are for plugin-generated setup assets only.
+
+## UE5.8 Root-Family Fix Recheck
+
+Status: code fix compiled, automated validation passed, and human visual recheck passed. Closure blocker resolved.
+
+Latest recheck output:
+
+```text
+/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_145341/
+```
+
+Recheck evidence:
+
+- Manny -> Mixamo `Report.json`:
+  - `rootFamilyPolicy = UEMannequin -> Mixamo`
+  - `rootChainMapping = Target Chain Root -> Source Chain None`
+  - `pelvisChainMapping = Target Chain Pelvis/Hips -> Source Chain None`
+- Mixamo -> Manny `Report.json`:
+  - `rootChainMapping = Target Chain Root -> Source Chain None`
+  - `pelvisChainMapping = Target Chain Pelvis -> Source Chain None`
+- Manny -> Quinn `Report.json`:
+  - `rootChainMapping = Target Chain Root -> Source Chain Root`
+  - `pelvisChainMapping = Target Chain Pelvis -> Source Chain Pelvis`
+
+Manual visual check required:
+
+- `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_145341/Manny_to_Mixamo/MF_Unarmed_Walk_Fwd_Right_RTG`
+- Result: no tearing, no floating, no global rotation; acceptable.
+
+Closure result:
+
+- `FX_RetargetAssistant MVP1 Alpha / UE5.8 Functional Validation Passed / Alpha Closure Passed`

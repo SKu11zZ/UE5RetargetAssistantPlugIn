@@ -869,13 +869,14 @@ Implemented:
 - Auto Create now updates existing plugin-generated IK Rigs and Retargeters with current directional policy, while still only touching assets under `/Game/FX_RetargetAssistant/Setups/`.
 - Recreate and Auto Repair also go through the same policy path.
 
-Directional root-family policies:
+Directional root-family policies recorded at this phase. Note: the `UEMannequin -> Mixamo` pelvis/hips line was superseded by Phase 31 after human visual validation found deformation.
 - `UEMannequin -> Mixamo`
   - Source Retarget Root = `pelvis`
   - Target Retarget Root = `Hips`
   - Target Chain `Root` -> Source Chain `None`
-  - Pelvis/Hips mapping remains exact.
-  - Log: `Applied UE->Mixamo root-family policy: Target Chain Root mapped to None to avoid global root double transform.`
+  - Superseded old behavior: Pelvis/Hips mapping remained exact.
+  - Current behavior after Phase 31: Target Chain `Pelvis/Hips` -> Source Chain `None`.
+  - Current log: `Applied UE->Mixamo root-family policy: Target Chain Root and Pelvis/Hips mapped to None to avoid Mixamo Hips double-driving.`
 - `Mixamo -> UEMannequin`
   - Source Retarget Root = `Hips`
   - Target Retarget Root = `pelvis`
@@ -1055,3 +1056,126 @@ Report.json:
 Technical conclusion:
 - UE5.8 generated IK Retargeter setup is invalid without a Retarget Ops Stack.
 - IK Rig references, Preview Mesh, Chain Mapping, Auto Align, and Root/Pelvis policy are not sufficient by themselves.
+
+## Phase 30 - UE5.8 MVP1 Alpha Functional Validation Pass (2026-06-24)
+
+Status: automated functional validation passed. The initial Manny -> Mixamo human visual failure was resolved in Phase 31, and UE5.8 MVP1 Alpha Closure is now passed.
+
+Validation entry:
+- Temporarily extended `FX_RetargetAssistantSmokeTestCommandlet` with `-FunctionalValidation` to run the MVP1 Alpha functional matrix against real plugin internals:
+  - `FFX_RetargetAssistantSetupManager`
+  - `FFX_RetargetAssistantPreflightValidator`
+  - `FFX_RetargetAssistantBatchExporter`
+  - `FFX_RetargetAssistantReportWriter`
+
+Automated validation cases passed:
+- Mixamo -> UE Manny:
+  - source `Center_Block`
+  - target `SKM_Manny_Simple`
+  - 3 Mixamo animations exported successfully
+  - Retarget Ops Stack valid; count recorded but not treated as a hard-coded requirement
+- UE Mannequin -> Mixamo:
+  - source `SKM_Manny_Simple`
+  - target `Center_Block`
+  - UE animation exported successfully
+- Manny -> Quinn:
+  - source `SKM_Manny_Simple`
+  - target `SKM_Quinn_Simple`
+  - UE animation exported successfully
+- Manual/user Retargeter safety:
+  - duplicated generated RTG to `/Game/FXRA_UserTest/RTG_UserOwned_Test`
+  - confirmed it is outside `/Game/FX_RetargetAssistant/Setups/`
+  - Auto Repair policy logs warning and does not modify/save it
+- Report.json:
+  - fields present including `retargetOpsStackValid`, `retargetOpsStackCount`, and `retargetOpsStackOpTypeNames`
+- Reopen validation:
+  - new UE commandlet process loaded generated IK Rig, Retargeter, exported AnimSequence assets, and Report.json successfully.
+
+Bug found and fixed during validation:
+- Duplicate export naming did not match MVP requirement.
+- Before fix, UE default uniqueness created:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG1`
+  - `Hip_Hop_Dancing_Anim_RTG2`
+- Fixed `FFX_RetargetAssistantBatchExporter` to precompute unique names:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG_001`
+  - `Hip_Hop_Dancing_Anim_RTG_002`
+- Re-ran validation and duplicate naming passed.
+
+Latest validation output folder:
+- `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_142733/`
+
+Important caveat:
+- The commandlet confirms setup, preflight, export, report, naming, safety, and reloadability.
+- It cannot visually judge subtle animation quality such as shaking, floating, or global rotation.
+- Human visual review should inspect:
+  - `Mixamo_to_Manny`
+  - `Manny_to_Mixamo`
+  - `Manny_to_Quinn`
+
+Human visual result:
+- The first human visual validation failed on:
+  - `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_142733/Manny_to_Mixamo/MF_Unarmed_Walk_Fwd_Right_RTG`
+- Symptom: Manny -> Mixamo body did not walk correctly; pelvis/Hips was pulled away and caused visible mesh deformation/tearing.
+- Resolution: fixed in Phase 31 by mapping UE->Mixamo Target Chain `Root` and `Pelvis/Hips` to Source Chain `None`.
+- Current state: `UE5.8 Functional Validation automated PASS + human visual validation PASS.`
+
+Root-family correction to implement:
+- `UEMannequin -> Mixamo` must not let Mixamo `Hips` be driven by normal FK chain mapping while it is also used by Retarget Root / Pelvis Motion / Root Motion.
+- Required generated setup policy:
+  - Source Retarget Root = `pelvis`
+  - Target Retarget Root = `Hips`
+  - Target Chain `Root` -> Source Chain `None`
+  - Target Chain `Pelvis/Hips` -> Source Chain `None`
+  - Pelvis Motion / Root Motion Ops own the Hips/root-family motion.
+- UE5.8 Root/Pelvis Motion Op tuning for this cross-family direction:
+  - Safe controller bone setters are applied:
+    - Pelvis Motion `SourcePelvis = pelvis`
+    - Pelvis Motion `TargetPelvis = Hips`
+    - Root Motion `SourceRoot = pelvis`
+    - Root Motion `TargetRoot = Hips`
+    - Root Motion `TargetPelvis = Hips`
+  - Direct by-value `FIKRetargetRootMotionOpSettings` mutation was attempted but rejected because UE5.8 links an unexported settings symbol from the plugin module.
+  - Therefore `RootMotionSource`, `RotateWithPelvis`, `RootHeightSource`, and `MaintainOffsetFromPelvis` are not currently changed by code; visual validation must decide whether chain None + bone setters is sufficient or whether a lower-level/editor-module-safe settings path is needed.
+- This is a cross-family preset only. Do not apply it globally:
+  - `Mixamo -> UEMannequin` keeps Target Chain `Root=None` and `Pelvis=None`.
+  - `UEMannequin -> UEMannequin` keeps Root/Pelvis exact.
+
+## Phase 31 - UE5.8 UE->Mixamo Root-Family Deformation Fix Attempt (2026-06-24)
+
+Status: implemented, compiled, automated FunctionalValidation passed, and human visual re-check passed. Current stage: `FX_RetargetAssistant MVP1 Alpha / UE5.8 Functional Validation Passed / Alpha Closure Passed`.
+
+Code changes:
+- Updated generated setup root-family policy for `UEMannequin -> Mixamo`:
+  - Target Chain `Root` -> Source Chain `None`
+  - Target Chain `Pelvis/Hips` -> Source Chain `None`
+- Kept cross-family boundaries intact:
+  - `Mixamo -> UEMannequin` remains Target Chain `Root=None`, Target Chain `Pelvis=None`.
+  - `UEMannequin -> UEMannequin` remains Root/Pelvis exact.
+- Added safe UE5.8 Op controller bone setup for `UEMannequin -> Mixamo`:
+  - Pelvis Motion source pelvis = `pelvis`
+  - Pelvis Motion target pelvis = `Hips`
+  - Root Motion source root = `pelvis`
+  - Root Motion target root = `Hips`
+  - Root Motion target pelvis = `Hips`
+- FunctionalValidation now recreates generated setup assets for the main matrix so old generated RTGs do not hide root-family policy changes.
+
+Build / validation:
+- `FXRA58Editor Win64 Development` compile passed.
+- `FX_RetargetAssistantSmokeTest -FunctionalValidation -nullrhi` passed.
+- New validation output:
+  - `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_145341/`
+- New Manny -> Mixamo report confirms:
+  - `rootFamilyPolicy = UEMannequin -> Mixamo`
+  - `rootChainMapping = Target Chain Root -> Source Chain None`
+  - `pelvisChainMapping = Target Chain Pelvis/Hips -> Source Chain None`
+- New Mixamo -> Manny report still confirms Target Chain Root/Pelvis are None.
+- New Manny -> Quinn report still confirms Root -> Root and Pelvis -> Pelvis.
+- Human visual validation passed on:
+  - `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_145341/Manny_to_Mixamo/MF_Unarmed_Walk_Fwd_Right_RTG`
+- Result: no tearing, no floating, no global rotation; acceptable.
+
+Known limitation:
+- Direct by-value mutation of `FIKRetargetRootMotionOpSettings` caused an unresolved UE5.8 linker symbol from the plugin module, so enum settings such as `RootMotionSource`, `RootHeightSource`, and `MaintainOffsetFromPelvis` are not yet programmatically changed.
+- Since visual validation passed, deeper Root Motion enum mutation is not required for MVP1 Alpha Closure.
