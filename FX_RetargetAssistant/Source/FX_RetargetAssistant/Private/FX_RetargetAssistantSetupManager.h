@@ -23,6 +23,9 @@ struct FFRA_AutoRetargetSetup
     FString RootChainMapping;
     FString PelvisChainMapping;
     FString ChainMappingSummary;
+    bool bRetargetOpsStackValid = false;
+    int32 RetargetOpsStackCount = 0;
+    TArray<FString> RetargetOpsStackOpTypeNames;
     TArray<FString> Messages;
 };
 

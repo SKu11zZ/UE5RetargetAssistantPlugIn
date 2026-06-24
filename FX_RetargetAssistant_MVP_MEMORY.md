@@ -915,3 +915,143 @@ Verification:
 Required visual checks:
 - Mixamo -> UE Manny: confirm Target Chain `Pelvis=None` and no shaking.
 - UE Mannequin -> Mixamo: confirm Target Chain `Root=None` and no floating/global rotation.
+
+## Phase 27 - UE5.8 Test Asset Preparation + Bring-up Pass 2 Partial (2026-06-24)
+
+Status: UE5.8 test assets prepared and automated bring-up checks passed. Editor UI / visual retarget matrix is still pending and must not be marked as MVP1 functional validation passed yet.
+
+Context:
+- Active branch remains `ue58-main`.
+- Active project remains `F:\Unreal Projects\FXRA58`.
+- Separate UE5.8 project `F:\Unreal Projects\ResearchOnUENewTools` was not opened or modified.
+
+Implemented / prepared:
+- Migrated Mixamo test assets into FXRA58 without copying old UE5.4 generated setup assets.
+- Final UE5.8 test asset locations:
+  - `/Game/FXRA_Imported/MixamoShared/Center_Block`
+  - `/Game/FXRA_Imported/MixamoShared/Center_Block_Anim`
+  - `/Game/FXRA_Imported/MixamoShared/Hip_Hop_Dancing_Anim`
+  - `/Game/FXRA_Imported/MixamoShared/Swing_Dancing_Anim`
+  - dependency: `/Game/FXRA_Imported/Mixamo/Center_Block_Skeleton`
+- Important asset migration note:
+  - Initial FBX automation did not reliably produce required `_Anim` names in UE5.8.
+  - Copying only `MixamoShared` first caused AnimSequence assets to load with `Skeleton == nullptr`.
+  - Fix was to copy `Center_Block_Skeleton` dependency first, then re-copy `MixamoShared`, then resave with UE5.8.
+- ResavePackages passed for `/Game/FXRA_Imported/Mixamo` and `/Game/FXRA_Imported/MixamoShared` with 0 errors and 0 warnings.
+
+Code adjustment:
+- `PrepareMixamoToUE5MannyTestSet` no longer depends on old UE5.4 default assets:
+  - removed hard requirement for `/Game/Characters/Mannequins/Rigs/IK_Mannequin`
+  - target mesh now prefers `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple`, with `/Game/Characters/Mannequins/Meshes/SKM_Manny` as fallback
+  - test set now uses `PrepareAutoRetargetSetup` to generate UE5.8 setup under `/Game/FX_RetargetAssistant/Setups/`
+
+Automated verification:
+- Built `FXRA58Editor` successfully with UE5.8 and VS 14.44.
+- Asset validation script confirmed:
+  - `Center_Block` loads as SkeletalMesh.
+  - all 3 Mixamo AnimSequence assets load.
+  - `Center_Block` and all 3 AnimSequences share `/Game/FXRA_Imported/Mixamo/Center_Block_Skeleton`.
+- `FX_RetargetAssistantSmokeTest` passed:
+  - generated `/Game/FX_RetargetAssistant/Setups/Center_Block_to_SKM_Manny_Simple/`
+  - generated `IK_Center_Block`
+  - generated `IK_SKM_Manny_Simple`
+  - generated `RTG_Center_Block_to_SKM_Manny_Simple`
+  - applied Mixamo -> UE root-family policy:
+    - Source Retarget Root = `Hips`
+    - Target Retarget Root = `pelvis`
+    - Target Chain `Pelvis=None`
+    - Target Chain `Root=None`
+  - Preflight ready for 3 animation(s).
+- FXRA58 Editor was launched with `-d3d11 -NoLiveCoding -log` and reached project window title `FXRA58 - Unreal Editor`.
+
+Still pending before Pass 2 can be committed:
+- Manual/UI verification of the FX Retarget Assistant panel in UE5.8.
+- Visual export checks:
+  - Mixamo -> UE Manny
+  - UE Mannequin -> Mixamo
+  - Manny -> Quinn
+- Manual Mode / user Retargeter safety.
+- Duplicate output naming and Report.json validation from real export.
+- Reopen persistence check for generated IK Rig / Retargeter / AnimSequence.
+
+## Phase 28 - UE5.8 Retarget Ops Stack Fix (2026-06-24)
+
+Status: implemented, compiled, smoke-tested, and FXRA58 Editor relaunched for visual verification.
+
+User finding:
+- UE5.8 generated Retargeter opened with an empty Op Stack.
+- It also showed no effective Auto Align behavior.
+- Retargeted animation output was empty.
+
+Root cause:
+- UE5.8 Retargeter runtime/export depends on the new `RetargetOps` stack.
+- Our generated setup was still mainly configuring old/global chain mapping and target pose data.
+- `Controller->AutoMapChains(...)` before creating default Ops did not create the required UE5.8 operation stack.
+
+Fix:
+- In both generated retargeter configuration paths, changed the order to:
+  1. `SetIKRig(Source/Target)`
+  2. `SetPreviewMesh(Source/Target)`
+  3. `RemoveAllOps()`
+  4. `AddDefaultOps()`
+  5. `AutoMapChains(EAutoMapChainType::Exact, true)`
+  6. `CleanAsset()`
+  7. reset target retarget pose
+  8. `AutoAlignAllBones(Target)`
+  9. apply directional Root/Pelvis policy
+  10. save generated Retargeter
+- Uses `FScopedReinitializeIKRetargeter(..., ERetargetRefreshMode::ProcessorAndOpStack)`.
+- Updated log text to explicitly mention `UE5.8 default Retarget Ops`.
+
+Verification:
+- Synced source to `F:\Unreal Projects\FXRA58\Plugins\FX_RetargetAssistant`.
+- Built `FXRA58Editor` successfully.
+- Ran `FX_RetargetAssistantSmokeTest` successfully:
+  - reused generated IK Rigs
+  - reconfigured generated Retargeter with UE5.8 default Retarget Ops
+  - applied Mixamo -> UE root-family policy
+  - Preflight passed for 3 animation(s)
+  - 0 errors / 0 warnings
+- Binary inspection of generated `RTG_Center_Block_to_SKM_Manny_Simple.uasset` confirmed serialized op types:
+  - `IKRetargetPelvisMotionOp`
+  - `IKRetargetFKChainsOp`
+  - `IKRetargetRunIKRigOp`
+  - `IKRetargetRootMotionOp`
+  - `IKRetargetCurveRemapOp`
+- Relaunched FXRA58 Editor with fixed plugin.
+
+Important manual step:
+- Retargeters generated before this fix, such as `RTG_Hip_Hop_Dancing_to_SKM_Quinn_Simple`, must be recreated once via `Recreate Generated Setup` or regenerated by Auto Create. Old assets may still have empty Op Stack until reconfigured.
+
+## Phase 29 - UE5.8 Retarget Ops Stack Closure Guardrails (2026-06-24)
+
+Status: implemented and ready for commit after build/smoke verification.
+
+User review requirement:
+- The UE5.8 Retarget Ops Stack visual fix passed.
+- Before commit, Auto Create must not overwrite a valid existing generated Retargeter because users may have manually fine-tuned it in Open Retargeter.
+- Missing Retarget Ops Stack must be detected before export and written into Report.json.
+
+Implementation:
+- Added `FFX_RetargetAssistantRetargeterUtils` to inspect UE5.8 Retarget Ops Stack.
+- Auto Create now reuses existing generated IK Rig assets without saving them.
+- Auto Create now reuses existing generated Retargeters without `RemoveAllOps`, `AddDefaultOps`, Auto Align, or Save when their Retarget Ops Stack is valid.
+- Auto Create may repair a missing Retarget Ops Stack only for plugin-generated Retargeters under `/Game/FX_RetargetAssistant/Setups/`.
+- Recreate Generated Setup remains the explicit rebuild path and may clear/rebuild/save generated setup assets.
+- User Retargeters outside `/Game/FX_RetargetAssistant/Setups/` remain read-only.
+
+Preflight / status:
+- Preflight now checks `UIKRetargeter::GetRetargetOps()`.
+- A missing Retarget Ops Stack is an error and blocks export to avoid empty animations.
+- For plugin-generated Retargeters, the error instructs users to use `Recreate Generated Setup`.
+- For user Retargeters, the error instructs users to inspect/fix the asset in Unreal's native Retargeter editor.
+- Setup Status treats a selected Retargeter with no valid Ops Stack as `Invalid`.
+
+Report.json:
+- Added `retargetOpsStackValid`.
+- Added `retargetOpsStackCount`.
+- Added `retargetOpsStackOpTypeNames`.
+
+Technical conclusion:
+- UE5.8 generated IK Retargeter setup is invalid without a Retarget Ops Stack.
+- IK Rig references, Preview Mesh, Chain Mapping, Auto Align, and Root/Pelvis policy are not sufficient by themselves.

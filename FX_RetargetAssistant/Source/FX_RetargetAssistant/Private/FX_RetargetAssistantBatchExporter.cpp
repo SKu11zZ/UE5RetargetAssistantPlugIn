@@ -99,6 +99,9 @@ bool FFX_RetargetAssistantBatchExporter::Run(const FFRA_BatchRetargetInput& Inpu
     OutReport.Suffix = Input.Suffix;
     OutReport.bOverwriteExisting = Input.bOverwriteExisting;
     OutReport.PreflightMessages = Preflight.Messages;
+    OutReport.bRetargetOpsStackValid = Preflight.bRetargetOpsStackValid;
+    OutReport.RetargetOpsStackCount = Preflight.RetargetOpsStackCount;
+    OutReport.RetargetOpsStackOpTypeNames = Preflight.RetargetOpsStackOpTypeNames;
     OutReport.TotalCount = Input.AssetsToRetarget.Num();
 
     if (!SourceMesh || !TargetMesh || !Retargeter)

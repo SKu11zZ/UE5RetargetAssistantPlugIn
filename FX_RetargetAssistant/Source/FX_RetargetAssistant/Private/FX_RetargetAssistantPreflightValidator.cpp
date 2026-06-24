@@ -2,6 +2,7 @@
 
 #include "Animation/AnimSequence.h"
 #include "FX_RetargetAssistantPathManager.h"
+#include "FX_RetargetAssistantRetargeterUtils.h"
 #include "Retargeter/IKRetargeter.h"
 #include "Engine/SkeletalMesh.h"
 
@@ -56,8 +57,27 @@ FFRA_PreflightResult FFX_RetargetAssistantPreflightValidator::Validate(const FFR
 
     if (Retargeter)
     {
-        // MVP 0 keeps this deliberately shallow. Deeper chain/root/pose checks are warnings or later work.
         Add(Result, EFRA_LogSeverity::Info, TEXT("RETARGETER_SELECTED"), FString::Printf(TEXT("Using existing IK Retargeter: %s"), *Retargeter->GetPathName()));
+
+        const FFRA_RetargetOpsStackInfo OpsInfo = FFX_RetargetAssistantRetargeterUtils::GetRetargetOpsStackInfo(Retargeter);
+        Result.bRetargetOpsStackValid = OpsInfo.bValid;
+        Result.RetargetOpsStackCount = OpsInfo.Count;
+        Result.RetargetOpsStackOpTypeNames = OpsInfo.OpTypeNames;
+
+        if (!OpsInfo.bValid)
+        {
+            const bool bGeneratedRetargeter = FFX_RetargetAssistantRetargeterUtils::IsGeneratedSetupRetargeter(Retargeter);
+            Add(Result,
+                EFRA_LogSeverity::Error,
+                TEXT("RETARGET_OPS_STACK_MISSING"),
+                bGeneratedRetargeter
+                    ? TEXT("IK Retargeter has no valid UE5.8 Retarget Ops Stack. Use Recreate Generated Setup before exporting.")
+                    : TEXT("IK Retargeter has no valid UE5.8 Retarget Ops Stack. Open it in the native UE Retargeter editor and add/check default ops; FX Retarget Assistant will not modify user Retargeters."));
+        }
+        else
+        {
+            Add(Result, EFRA_LogSeverity::Info, TEXT("RETARGET_OPS_STACK_READY"), FString::Printf(TEXT("Retarget Ops Stack valid. Count=%d."), OpsInfo.Count));
+        }
     }
 
     if (Input.AssetsToRetarget.Num() > 100)

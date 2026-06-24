@@ -3,6 +3,7 @@
 #include "Animation/AnimSequence.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/SkeletalMesh.h"
+#include "FX_RetargetAssistantRetargeterUtils.h"
 #include "Misc/PackageName.h"
 #include "RetargetEditor/IKRetargeterController.h"
 #include "Retargeter/IKRetargeter.h"
@@ -154,11 +155,14 @@ namespace
         }
 
         {
-            FScopedReinitializeIKRetargeter Reinitialize(Controller);
+            FScopedReinitializeIKRetargeter Reinitialize(Controller, ERetargetRefreshMode::ProcessorAndOpStack);
             Controller->SetIKRig(ERetargetSourceOrTarget::Source, SourceIKRig);
             Controller->SetIKRig(ERetargetSourceOrTarget::Target, TargetIKRig);
             Controller->SetPreviewMesh(ERetargetSourceOrTarget::Source, SourceMesh);
             Controller->SetPreviewMesh(ERetargetSourceOrTarget::Target, TargetMesh);
+
+            Controller->RemoveAllOps();
+            Controller->AddDefaultOps();
             Controller->AutoMapChains(EAutoMapChainType::Exact, true);
             Controller->CleanAsset();
             Controller->SetSourceChain(NAME_None, FName(TEXT("Pelvis")));
@@ -175,7 +179,7 @@ namespace
             return false;
         }
 
-        OutTestSet.Messages.Add(TEXT("Auto-aligned target retarget pose for Mixamo -> UE5 Manny."));
+        OutTestSet.Messages.Add(TEXT("Configured UE5.8 Retarget Ops and auto-aligned target retarget pose for Mixamo -> UE5 Manny."));
         return true;
     }
 
@@ -446,18 +450,6 @@ namespace
         {
             if (!bRecreateExisting)
             {
-                UIKRigController* ExistingController = UIKRigController::GetController(Existing);
-                const EFRA_SkeletonFamily ExistingFamily = DetectSkeletonFamily(Mesh);
-                const FName ExistingRetargetRoot = GetDirectionalRetargetRoot(Mesh, ExistingFamily);
-                if (ExistingController && ExistingController->SetSkeletalMesh(Mesh) && ExistingRetargetRoot != NAME_None)
-                {
-                    ExistingController->SetRetargetRoot(ExistingRetargetRoot);
-                    if (!SaveAsset(Existing, OutError))
-                    {
-                        return nullptr;
-                    }
-                    OutSetup.Messages.Add(FString::Printf(TEXT("Updated generated IK Rig retarget root for %s: %s"), *AssetName, *ExistingRetargetRoot.ToString()));
-                }
                 OutSetup.Messages.Add(FString::Printf(TEXT("Reusing existing generated IK Rig: %s"), *Existing->GetPathName()));
                 return Existing;
             }
@@ -548,11 +540,14 @@ namespace
         }
 
         {
-            FScopedReinitializeIKRetargeter Reinitialize(Controller);
+            FScopedReinitializeIKRetargeter Reinitialize(Controller, ERetargetRefreshMode::ProcessorAndOpStack);
             Controller->SetIKRig(ERetargetSourceOrTarget::Source, SourceIKRig);
             Controller->SetIKRig(ERetargetSourceOrTarget::Target, TargetIKRig);
             Controller->SetPreviewMesh(ERetargetSourceOrTarget::Source, SourceMesh);
             Controller->SetPreviewMesh(ERetargetSourceOrTarget::Target, TargetMesh);
+
+            Controller->RemoveAllOps();
+            Controller->AddDefaultOps();
             Controller->AutoMapChains(EAutoMapChainType::Exact, true);
             Controller->CleanAsset();
 
@@ -568,7 +563,11 @@ namespace
             return false;
         }
 
-        OutSetup.Messages.Add(TEXT("Configured generated IK Retargeter with Exact Automap, target Auto Align, and directional root-family policy."));
+        const FFRA_RetargetOpsStackInfo OpsInfo = FFX_RetargetAssistantRetargeterUtils::GetRetargetOpsStackInfo(Retargeter);
+        OutSetup.bRetargetOpsStackValid = OpsInfo.bValid;
+        OutSetup.RetargetOpsStackCount = OpsInfo.Count;
+        OutSetup.RetargetOpsStackOpTypeNames = OpsInfo.OpTypeNames;
+        OutSetup.Messages.Add(TEXT("Configured generated IK Retargeter with UE5.8 default Retarget Ops, Exact Automap, target Auto Align, and directional root-family policy."));
         return true;
     }
 
@@ -578,12 +577,23 @@ namespace
         {
             if (!bRecreateExisting)
             {
+                const FFRA_RetargetOpsStackInfo OpsInfo = FFX_RetargetAssistantRetargeterUtils::GetRetargetOpsStackInfo(Existing);
+                OutSetup.bRetargetOpsStackValid = OpsInfo.bValid;
+                OutSetup.RetargetOpsStackCount = OpsInfo.Count;
+                OutSetup.RetargetOpsStackOpTypeNames = OpsInfo.OpTypeNames;
+                if (OpsInfo.bValid)
+                {
+                    OutSetup.Messages.Add(FString::Printf(TEXT("Reusing existing generated IK Retargeter without modifying it: %s"), *Existing->GetPathName()));
+                    OutSetup.Messages.Add(FString::Printf(TEXT("Existing generated IK Retargeter Retarget Ops Stack is valid. Count=%d."), OpsInfo.Count));
+                    return Existing;
+                }
+
+                OutSetup.Messages.Add(FString::Printf(TEXT("Existing generated IK Retargeter is missing Retarget Ops Stack and will be repaired: %s"), *Existing->GetPathName()));
                 if (!ConfigureGeneratedRetargeter(Existing, SourceIKRig, TargetIKRig, SourceMesh, TargetMesh, OutSetup, OutError))
                 {
                     return nullptr;
                 }
-                OutSetup.Messages.Add(FString::Printf(TEXT("Reused and updated generated IK Retargeter: %s"), *Existing->GetPathName()));
-                OutSetup.Messages.Add(FString::Printf(TEXT("Reusing existing generated IK Retargeter: %s"), *Existing->GetPathName()));
+                OutSetup.Messages.Add(FString::Printf(TEXT("Repaired generated IK Retargeter missing Retarget Ops Stack: %s"), *Existing->GetPathName()));
                 return Existing;
             }
             if (!ConfigureGeneratedRetargeter(Existing, SourceIKRig, TargetIKRig, SourceMesh, TargetMesh, OutSetup, OutError))
@@ -668,8 +678,11 @@ bool FFX_RetargetAssistantSetupManager::PrepareMixamoToUE5MannyTestSet(FFRA_Mixa
     OutTestSet = FFRA_MixamoTestSet();
 
     USkeletalMesh* SourceMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/FXRA_Imported/MixamoShared/Center_Block.Center_Block"));
-    USkeletalMesh* TargetMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"));
-    UIKRigDefinition* TargetIKRig = LoadObject<UIKRigDefinition>(nullptr, TEXT("/Game/Characters/Mannequins/Rigs/IK_Mannequin.IK_Mannequin"));
+    USkeletalMesh* TargetMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+    if (!TargetMesh)
+    {
+        TargetMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"));
+    }
 
     if (!SourceMesh)
     {
@@ -678,23 +691,12 @@ bool FFX_RetargetAssistantSetupManager::PrepareMixamoToUE5MannyTestSet(FFRA_Mixa
     }
     if (!TargetMesh)
     {
-        OutError = TEXT("Missing UE target mesh: /Game/Characters/Mannequins/Meshes/SKM_Manny");
-        return false;
-    }
-    if (!TargetIKRig)
-    {
-        OutError = TEXT("Missing UE target IK Rig: /Game/Characters/Mannequins/Rigs/IK_Mannequin");
+        OutError = TEXT("Missing UE target mesh: /Game/Characters/Mannequins/Meshes/SKM_Manny_Simple or /Game/Characters/Mannequins/Meshes/SKM_Manny");
         return false;
     }
 
-    UIKRigDefinition* SourceIKRig = CreateOrLoadIKRig(SourceMesh, OutTestSet, OutError);
-    if (!SourceIKRig)
-    {
-        return false;
-    }
-
-    UIKRetargeter* Retargeter = CreateOrLoadRetargeter(SourceIKRig, TargetIKRig, SourceMesh, TargetMesh, OutTestSet, OutError);
-    if (!Retargeter)
+    FFRA_AutoRetargetSetup GeneratedSetup;
+    if (!PrepareAutoRetargetSetup(SourceMesh, TargetMesh, GeneratedSetup, OutError, false))
     {
         return false;
     }
@@ -707,7 +709,8 @@ bool FFX_RetargetAssistantSetupManager::PrepareMixamoToUE5MannyTestSet(FFRA_Mixa
 
     OutTestSet.SourceMesh = SourceMesh;
     OutTestSet.TargetMesh = TargetMesh;
-    OutTestSet.Retargeter = Retargeter;
+    OutTestSet.Retargeter = GeneratedSetup.Retargeter;
+    OutTestSet.Messages.Append(GeneratedSetup.Messages);
 
     for (const TCHAR* AnimationPath : AnimationPaths)
     {

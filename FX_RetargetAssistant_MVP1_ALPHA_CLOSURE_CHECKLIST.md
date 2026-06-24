@@ -67,6 +67,99 @@ Blocked until test assets are imported or migrated:
 - Output duplicate export validation that depends on a complete Retargeter + animation test path.
 - Report.json full field validation from an actual export.
 
+## Bring-up Pass 2 - Test Asset Preparation + Automated Checks
+
+Status: partial pass. Test assets are prepared and automated checks pass; Editor UI interaction and visual retarget matrix are still pending.
+
+Completed:
+
+- Prepared Mixamo test assets in FXRA58:
+  - `/Game/FXRA_Imported/MixamoShared/Center_Block`
+  - `/Game/FXRA_Imported/MixamoShared/Center_Block_Anim`
+  - `/Game/FXRA_Imported/MixamoShared/Hip_Hop_Dancing_Anim`
+  - `/Game/FXRA_Imported/MixamoShared/Swing_Dancing_Anim`
+  - skeleton dependency: `/Game/FXRA_Imported/Mixamo/Center_Block_Skeleton`
+- Did not copy UE5.4 generated setup assets:
+  - no `/Game/FX_RetargetAssistant/TestSet/IK_Mixamo_FXRA`
+  - no `/Game/FX_RetargetAssistant/TestSet/RTG_Mixamo_to_UE5Manny_FXRA`
+  - no UE5.4 `/Game/FX_RetargetAssistant/Setups/...`
+- UE5.8 resave passed for Mixamo assets with 0 errors / 0 warnings.
+- Asset validation confirmed `Center_Block` and all 3 AnimSequences share `/Game/FXRA_Imported/Mixamo/Center_Block_Skeleton`.
+- Updated SmokeTest/TestSet preparation to use UE5.8 Auto Setup instead of old `/Game/Characters/Mannequins/Rigs/IK_Mannequin`.
+- `FXRA58Editor` compile passed after the update.
+- `FX_RetargetAssistantSmokeTest` passed:
+  - generated `/Game/FX_RetargetAssistant/Setups/Center_Block_to_SKM_Manny_Simple/`
+  - generated `IK_Center_Block`
+  - generated `IK_SKM_Manny_Simple`
+  - generated `RTG_Center_Block_to_SKM_Manny_Simple`
+  - applied Mixamo -> UE root-family policy
+  - Preflight passed for 3 animation(s)
+- FXRA58 Editor launches with `-d3d11 -NoLiveCoding -log` and reaches window title `FXRA58 - Unreal Editor`.
+
+Still pending:
+
+- Open FX Retarget Assistant panel and verify UE5.8 UI details.
+- Retarget & Export actual output validation.
+- Visual checks for Mixamo -> UE Manny, UE Mannequin -> Mixamo, and Manny -> Quinn.
+- User Retargeter safety validation.
+- Duplicate output naming / Report.json validation.
+- Reopen persistence validation.
+
+## Bring-up Fix - UE5.8 Retarget Ops Stack
+
+Status: code fix passed compile and automated smoke test; visual verification still needed on regenerated setup assets.
+
+Issue:
+
+- Generated UE5.8 Retargeter assets could open with an empty Op Stack.
+- Auto Align appeared not to persist.
+- Exported retargeted animation could be empty.
+
+Fix:
+
+- Generated Retargeter configuration now follows the UE5.8 default-op path:
+  - clear existing ops
+  - `AddDefaultOps()`
+  - Exact Automap
+  - target pose reset
+  - target Auto Align
+  - directional Root/Pelvis policy
+  - save generated Retargeter
+- Reinitialization now uses `ERetargetRefreshMode::ProcessorAndOpStack`.
+
+Automated verification:
+
+- `FXRA58Editor` compile passed.
+- `FX_RetargetAssistantSmokeTest` passed with 0 errors / 0 warnings.
+- Generated RTG binary contains UE5.8 op types:
+  - `IKRetargetPelvisMotionOp`
+  - `IKRetargetFKChainsOp`
+  - `IKRetargetRunIKRigOp`
+  - `IKRetargetRootMotionOp`
+  - `IKRetargetCurveRemapOp`
+
+Manual verification required:
+
+- For any setup generated before this fix, click `Recreate Generated Setup` once.
+- Confirm the Retargeter editor shows default Ops in the Op Stack.
+- Confirm Auto Align result is visually correct.
+- Confirm exported animation is no longer empty.
+
+Closure guardrails:
+
+- Auto Create reuses an existing generated Retargeter without modifying or saving it when its UE5.8 Retarget Ops Stack is valid.
+- Auto Create does not update/save existing generated IK Rig assets in the default reuse path.
+- Recreate Generated Setup remains the explicit rebuild path for generated assets.
+- Existing generated Retargeters missing an Ops Stack are treated as invalid setup and may be repaired only under `/Game/FX_RetargetAssistant/Setups/`.
+- User Retargeters outside `/Game/FX_RetargetAssistant/Setups/` are never auto-modified, never Auto Aligned, and never Remove Ops / Add Default Ops / Saved.
+- Preflight checks the current Retargeter Ops Stack before export.
+- Missing Retarget Ops Stack is a Preflight error and blocks export to avoid empty AnimSequence output.
+- Setup Status shows `Invalid` when the selected Retargeter has no valid Retarget Ops Stack.
+- Report.json records:
+  - `retargetOpsStackValid`
+  - `retargetOpsStackCount`
+  - `retargetOpsStackOpTypeNames`
+
 ## UE5.8 First Test Matrix
 
 | Case | Status | Expected Result |

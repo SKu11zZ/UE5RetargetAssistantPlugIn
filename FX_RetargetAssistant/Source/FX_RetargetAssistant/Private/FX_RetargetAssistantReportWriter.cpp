@@ -65,6 +65,14 @@ bool FFX_RetargetAssistantReportWriter::WriteReport(const FFRA_BatchRetargetRepo
     Root->SetStringField(TEXT("rootChainMapping"), Report.RootChainMapping);
     Root->SetStringField(TEXT("pelvisChainMapping"), Report.PelvisChainMapping);
     Root->SetStringField(TEXT("chainMappingSummary"), Report.ChainMappingSummary);
+    Root->SetBoolField(TEXT("retargetOpsStackValid"), Report.bRetargetOpsStackValid);
+    Root->SetNumberField(TEXT("retargetOpsStackCount"), Report.RetargetOpsStackCount);
+    TArray<TSharedPtr<FJsonValue>> RetargetOps;
+    for (const FString& OpTypeName : Report.RetargetOpsStackOpTypeNames)
+    {
+        RetargetOps.Add(MakeShared<FJsonValueString>(OpTypeName));
+    }
+    Root->SetArrayField(TEXT("retargetOpsStackOpTypeNames"), RetargetOps);
     Root->SetStringField(TEXT("outputFolder"), Report.OutputFolder);
 
     TSharedRef<FJsonObject> NamingRule = MakeShared<FJsonObject>();

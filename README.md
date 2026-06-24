@@ -37,6 +37,17 @@ Select a Source character, Target character, and Source animations; the plugin c
 - Auto Repair and Recreate only modify plugin-generated setup assets under:
   `/Game/FX_RetargetAssistant/Setups/`
 - Manual/user Retargeters outside that path are treated as read-only by default.
+- `Auto Create` reuses an existing generated setup without overwriting it when its UE5.8 Retarget Ops Stack is valid.
+- `Recreate Generated Setup` is the explicit destructive/rebuild path for plugin-generated setup assets.
+
+## UE5.8 Retarget Ops Stack
+
+UE5.8 generated IK Retargeters must have a valid Retarget Ops Stack. Creating IK Rigs, preview meshes, chain mapping, Auto Align, and Root Family Directional Policy is not enough by itself.
+
+- Initial Create and Recreate create UE5.8 default Retarget Ops.
+- Existing generated Retargeters with a valid Ops Stack are reused without Remove Ops / Add Default Ops / Save.
+- Existing generated Retargeters missing an Ops Stack are treated as invalid setup and may be repaired only inside `/Game/FX_RetargetAssistant/Setups/`.
+- User Retargeters outside the plugin setup path are never auto-modified; Preflight reports the missing Ops Stack and blocks export.
 
 ## Root Family Directional Policy
 

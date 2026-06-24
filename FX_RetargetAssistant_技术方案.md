@@ -266,3 +266,18 @@ Walk_RTG_002
 - 跨版本桥接层扩展
 - 多版本 BuildPlugin 包
 - 5.4 commandlet workaround
+## UE5.8 Retarget Ops Stack Rule
+
+UE5.8 generated IK Retargeter assets are invalid unless they contain a valid Retarget Ops Stack.
+
+Configuring IK Rig references, preview meshes, chain mapping, Auto Align, and Root Family Directional Policy is not sufficient. Initial Create and Recreate must explicitly create UE5.8 default Retarget Ops before export.
+
+Auto Create must preserve user fine-tuning:
+- If an existing generated Retargeter under `/Game/FX_RetargetAssistant/Setups/` already has a valid Retarget Ops Stack, reuse it without `RemoveAllOps`, `AddDefaultOps`, Auto Align, or Save.
+- If an existing generated Retargeter is missing the Ops Stack, treat it as invalid setup. The plugin may safely repair only generated setup assets under `/Game/FX_RetargetAssistant/Setups/` and must log/report that repair.
+- User Retargeters outside `/Game/FX_RetargetAssistant/Setups/` are read-only. Preflight must block export when their Ops Stack is missing and instruct the user to fix them in Unreal's native Retargeter editor.
+
+`Report.json` records:
+- `retargetOpsStackValid`
+- `retargetOpsStackCount`
+- `retargetOpsStackOpTypeNames`

@@ -10,6 +10,7 @@
 #include "FX_RetargetAssistantPathManager.h"
 #include "FX_RetargetAssistantPreflightValidator.h"
 #include "FX_RetargetAssistantReportWriter.h"
+#include "FX_RetargetAssistantRetargeterUtils.h"
 #include "FX_RetargetAssistantSetupManager.h"
 #include "IContentBrowserSingleton.h"
 #include "Retargeter/IKRetargeter.h"
@@ -462,7 +463,7 @@ FReply SFX_RetargetAssistantPanel::AutoCreateSetup()
     bool bMissingChains = false;
     for (const FString& Message : Setup.Messages)
     {
-        const bool bIsWarning = Message.Contains(TEXT("Skipped chain"));
+        const bool bIsWarning = Message.Contains(TEXT("Skipped chain")) || Message.Contains(TEXT("missing Retarget Ops Stack"));
         AppendLog(bIsWarning ? EFRA_LogSeverity::Warning : EFRA_LogSeverity::Info, Message);
         if (bIsWarning)
         {
@@ -523,7 +524,7 @@ FReply SFX_RetargetAssistantPanel::RecreateGeneratedSetup()
     bool bMissingChains = false;
     for (const FString& Message : Setup.Messages)
     {
-        const bool bIsWarning = Message.Contains(TEXT("Skipped chain"));
+        const bool bIsWarning = Message.Contains(TEXT("Skipped chain")) || Message.Contains(TEXT("missing Retarget Ops Stack"));
         AppendLog(bIsWarning ? EFRA_LogSeverity::Warning : EFRA_LogSeverity::Info, Message);
         if (bIsWarning)
         {
@@ -887,7 +888,7 @@ FString SFX_RetargetAssistantPanel::GetSelectedRetargeterPath() const
 
 bool SFX_RetargetAssistantPanel::IsSelectedRetargeterGenerated() const
 {
-    return GetSelectedRetargeterPath().StartsWith(TEXT("/Game/FX_RetargetAssistant/Setups/"));
+    return FFX_RetargetAssistantRetargeterUtils::IsGeneratedSetupPath(GetSelectedRetargeterPath());
 }
 
 FText SFX_RetargetAssistantPanel::GetSetupStatusText() const
@@ -907,6 +908,14 @@ void SFX_RetargetAssistantPanel::RefreshSetupStatus()
     if (!RetargeterObject.IsValid())
     {
         SetupStatus = TEXT("Not Created");
+        return;
+    }
+
+    UIKRetargeter* Retargeter = Cast<UIKRetargeter>(RetargeterObject.Get());
+    const FFRA_RetargetOpsStackInfo OpsInfo = FFX_RetargetAssistantRetargeterUtils::GetRetargetOpsStackInfo(Retargeter);
+    if (!OpsInfo.bValid)
+    {
+        SetupStatus = TEXT("Invalid");
         return;
     }
 

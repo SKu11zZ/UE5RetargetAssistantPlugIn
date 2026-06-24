@@ -37,6 +37,9 @@ struct FFRA_PreflightResult
 {
     TArray<FFRA_LogMessage> Messages;
     bool bCanRun = false;
+    bool bRetargetOpsStackValid = false;
+    int32 RetargetOpsStackCount = 0;
+    TArray<FString> RetargetOpsStackOpTypeNames;
 
     bool HasErrors() const
     {
@@ -81,6 +84,9 @@ struct FFRA_BatchRetargetReport
     FString RootChainMapping;
     FString PelvisChainMapping;
     FString ChainMappingSummary;
+    bool bRetargetOpsStackValid = false;
+    int32 RetargetOpsStackCount = 0;
+    TArray<FString> RetargetOpsStackOpTypeNames;
     TArray<FString> Warnings;
     FString OutputFolder;
     FString Suffix;
