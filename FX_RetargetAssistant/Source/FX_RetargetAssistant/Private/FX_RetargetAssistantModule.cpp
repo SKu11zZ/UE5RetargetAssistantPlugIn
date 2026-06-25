@@ -51,7 +51,7 @@ void FFX_RetargetAssistantModule::RegisterMenus()
     Section.AddMenuEntry(
         TEXT("FX_RetargetAssistant_Open"),
         LOCTEXT("OpenMenuLabel", "FX Retarget Assistant"),
-        LOCTEXT("OpenMenuTooltip", "Open the FX Retarget Assistant panel."),
+        LOCTEXT("OpenMenuTooltip", "Open the FX Retarget Assistant panel for UE5.8 guided IK Retargeter setup and batch animation export."),
         FSlateIcon(),
         FUIAction(FExecuteAction::CreateRaw(this, &FFX_RetargetAssistantModule::OpenAssistantTab)));
 }

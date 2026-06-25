@@ -75,6 +75,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SObjectPropertyEntryBox)
                         .AllowedClass(USkeletalMesh::StaticClass())
+                        .ToolTipText(LOCTEXT("SourceMeshTooltip", "Choose the character mesh that owns the source animations. Anim Clip and Add Selected will only accept AnimSequences using this mesh's Skeleton."))
                         .DisplayUseSelected(false)
                         .DisplayBrowse(false)
                         .ObjectPath_Lambda([this]()
@@ -104,6 +105,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SObjectPropertyEntryBox)
                         .AllowedClass(USkeletalMesh::StaticClass())
+                        .ToolTipText(LOCTEXT("TargetMeshTooltip", "Choose the character mesh that will receive the exported animations. Auto Create uses this mesh to build the target IK Rig."))
                         .DisplayUseSelected(false)
                         .DisplayBrowse(false)
                         .ObjectPath_Lambda([this]()
@@ -137,6 +139,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SObjectPropertyEntryBox)
                         .AllowedClass(UAnimSequence::StaticClass())
+                        .ToolTipText(LOCTEXT("AnimClipTooltip", "Pick an AnimSequence that uses the Source Character Mesh skeleton. This picker is disabled until a Source Character Mesh is selected."))
                         .IsEnabled_Lambda([this]() { return Cast<USkeletalMesh>(SourceMeshObject.Get()) != nullptr; })
                         .OnShouldFilterAsset(this, &SFX_RetargetAssistantPanel::ShouldFilterAnimSequence)
                         .DisplayUseSelected(false)
@@ -157,6 +160,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SButton)
                         .Text(LOCTEXT("AddPickedAnimation", "Add"))
+                        .ToolTipText(LOCTEXT("AddPickedAnimationTooltip", "Add the picked AnimSequence to the batch list if it matches the Source Skeleton."))
                         .OnClicked(this, &SFX_RetargetAssistantPanel::AddPickedAnimation)
                     ]
                 ]
@@ -173,6 +177,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SObjectPropertyEntryBox)
                         .AllowedClass(UIKRetargeter::StaticClass())
+                        .ToolTipText(LOCTEXT("RetargetSetupTooltip", "Use a generated setup from Auto Create, or manually choose an existing IK Retargeter. User Retargeters outside /Game/FX_RetargetAssistant/Setups/ are treated as read-only."))
                         .DisplayUseSelected(false)
                         .DisplayBrowse(false)
                         .ObjectPath_Lambda([this]()
@@ -191,6 +196,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SButton)
                         .Text(LOCTEXT("OpenRetargeter", "Open"))
+                        .ToolTipText(LOCTEXT("OpenRetargeterTooltip", "Open the selected IK Retargeter in Unreal's native Retargeter editor for review or manual adjustment."))
                         .IsEnabled_Lambda([this]() { return RetargeterObject.IsValid(); })
                         .OnClicked(this, &SFX_RetargetAssistantPanel::OpenRetargeter)
                     ]
@@ -207,6 +213,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .FillWidth(1.0f)
                     [
                         SAssignNew(OutputFolderTextBox, SEditableTextBox)
+                        .ToolTipText(LOCTEXT("OutputFolderTooltip", "Content Browser package path for exported AnimSequence assets and Report.json, for example /Game/FX_RetargetAssistant/Exports/Batch_..."))
                         .Text(FText::FromString(FFX_RetargetAssistantPathManager::MakeDefaultBatchOutputPath()))
                     ]
                     + SHorizontalBox::Slot()
@@ -214,6 +221,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .Padding(6, 0, 0, 0)
                     [
                         SNew(SComboButton)
+                        .ToolTipText(LOCTEXT("BrowseOutputTooltip", "Pick an output folder from the Content Browser path tree."))
                         .ButtonContent()
                         [
                             SNew(STextBlock).Text(LOCTEXT("BrowseOutput", "Browse..."))
@@ -229,6 +237,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     [
                         SNew(SButton)
                         .Text(LOCTEXT("UseSelectedFolder", "Use Selected Folder"))
+                        .ToolTipText(LOCTEXT("UseSelectedFolderTooltip", "Use the folder currently selected in the Content Browser as the output folder."))
                         .OnClicked(this, &SFX_RetargetAssistantPanel::UseSelectedOutputFolder)
                     ]
                 ]
@@ -240,6 +249,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                 + SGridPanel::Slot(1, 5).Padding(8, 3)
                 [
                     SAssignNew(SuffixTextBox, SEditableTextBox)
+                    .ToolTipText(LOCTEXT("SuffixTooltip", "Suffix appended to exported AnimSequence asset names. Existing assets are not overwritten; unique names use _001, _002, and so on."))
                     .Text(FText::FromString(TEXT("_RTG")))
                 ]
 
@@ -263,48 +273,56 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("UseSelected", "Add Selected"))
+                    .ToolTipText(LOCTEXT("AddSelectedTooltip", "Add selected AnimSequence assets from the Content Browser. Only animations matching the Source Skeleton are accepted."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::UseSelectedAnimations)
                 ]
                 + SUniformGridPanel::Slot(1, 0)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("AutoCreateSetup", "Auto Create IK Rig + Retargeter"))
+                    .ToolTipText(LOCTEXT("AutoCreateSetupTooltip", "Create or reuse plugin-generated IK Rig and IK Retargeter assets under /Game/FX_RetargetAssistant/Setups/. Existing valid generated Retargeters are reused without overwriting manual edits."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::AutoCreateSetup)
                 ]
                 + SUniformGridPanel::Slot(2, 0)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("RecreateSetup", "Recreate Generated Setup"))
+                    .ToolTipText(LOCTEXT("RecreateSetupTooltip", "Explicitly rebuild and save plugin-generated setup assets. Only use this when you want to discard generated setup changes. User Retargeters outside the setup folder are not modified."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::RecreateGeneratedSetup)
                 ]
                 + SUniformGridPanel::Slot(3, 0)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("AutoRepairMapping", "Auto Repair IK Mapping"))
+                    .ToolTipText(LOCTEXT("AutoRepairMappingTooltip", "Repair only plugin-generated Retargeters under /Game/FX_RetargetAssistant/Setups/. User Retargeters are left untouched and will receive a warning."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::AutoRepairIKMapping)
                 ]
                 + SUniformGridPanel::Slot(0, 1)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("ClearAnimations", "Clear Animations"))
+                    .ToolTipText(LOCTEXT("ClearAnimationsTooltip", "Remove all AnimSequence assets from the current batch list."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::ClearAnimations)
                 ]
                 + SUniformGridPanel::Slot(1, 1)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("ShowOutputFolder", "Show Output Folder"))
+                    .ToolTipText(LOCTEXT("ShowOutputFolderTooltip", "Sync the Content Browser to the output folder after export."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::ShowOutputFolder)
                 ]
                 + SUniformGridPanel::Slot(2, 1)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("Preflight", "Preflight"))
+                    .ToolTipText(LOCTEXT("PreflightTooltip", "Validate meshes, animations, output folder, selected Retargeter, and UE5.8 Retarget Ops Stack before export."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::RunPreflight)
                 ]
                 + SUniformGridPanel::Slot(3, 1)
                 [
                     SNew(SButton)
                     .Text(LOCTEXT("Execute", "Retarget && Export"))
+                    .ToolTipText(LOCTEXT("ExecuteTooltip", "Export selected AnimSequences using the current IK Retargeter. This action does not create setup assets, auto-repair mapping, Auto Align, or modify user Retargeters."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::ExecuteBatchRetarget)
                 ]
             ]

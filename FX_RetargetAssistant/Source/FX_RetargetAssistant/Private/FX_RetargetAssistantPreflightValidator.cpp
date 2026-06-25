@@ -16,25 +16,25 @@ FFRA_PreflightResult FFX_RetargetAssistantPreflightValidator::Validate(const FFR
 
     if (!SourceMesh)
     {
-        Add(Result, EFRA_LogSeverity::Error, TEXT("SOURCE_MESH_MISSING"), TEXT("Source Skeletal Mesh is empty or cannot be loaded."));
+        Add(Result, EFRA_LogSeverity::Error, TEXT("SOURCE_MESH_MISSING"), TEXT("Choose Step 1 - Source Character Mesh before running Preflight or Retarget & Export."));
     }
     if (!TargetMesh)
     {
-        Add(Result, EFRA_LogSeverity::Error, TEXT("TARGET_MESH_MISSING"), TEXT("Target Skeletal Mesh is empty or cannot be loaded."));
+        Add(Result, EFRA_LogSeverity::Error, TEXT("TARGET_MESH_MISSING"), TEXT("Choose Step 1 - Target Character Mesh before running Preflight or Retarget & Export."));
     }
     if (!Retargeter)
     {
-        Add(Result, EFRA_LogSeverity::Error, TEXT("RETARGETER_MISSING"), TEXT("IK Retargeter is empty or cannot be loaded."));
+        Add(Result, EFRA_LogSeverity::Error, TEXT("RETARGETER_MISSING"), TEXT("Choose Step 3 - Retarget Setup, or click Auto Create IK Rig + Retargeter before exporting."));
     }
     if (Input.AssetsToRetarget.IsEmpty())
     {
-        Add(Result, EFRA_LogSeverity::Error, TEXT("NO_ANIMATIONS"), TEXT("No Source AnimSequence assets were selected."));
+        Add(Result, EFRA_LogSeverity::Error, TEXT("NO_ANIMATIONS"), TEXT("No Source AnimSequence assets were selected. Pick Step 2 - Anim Clip and click Add, or select matching animations in the Content Browser and click Add Selected."));
     }
 
     FString PathError;
     if (Input.OutputPackagePath.IsEmpty() || !FFX_RetargetAssistantPathManager::EnsurePackagePathExists(Input.OutputPackagePath, PathError))
     {
-        Add(Result, EFRA_LogSeverity::Error, TEXT("OUTPUT_FOLDER_INVALID"), PathError.IsEmpty() ? TEXT("Output Folder is invalid.") : PathError);
+        Add(Result, EFRA_LogSeverity::Error, TEXT("OUTPUT_FOLDER_INVALID"), PathError.IsEmpty() ? TEXT("Output Folder is invalid. Use a Content Browser package path such as /Game/FX_RetargetAssistant/Exports/MyBatch.") : PathError);
     }
 
     if (SourceMesh && SourceMesh->GetSkeleton())
@@ -50,7 +50,7 @@ FFRA_PreflightResult FFX_RetargetAssistantPreflightValidator::Validate(const FFR
 
             if (AnimSequence->GetSkeleton() != SourceMesh->GetSkeleton())
             {
-                Add(Result, EFRA_LogSeverity::Error, TEXT("ANIMATION_SKELETON_MISMATCH"), FString::Printf(TEXT("AnimSequence skeleton does not match Source Mesh skeleton: %s"), *AnimSequence->GetPathName()));
+                Add(Result, EFRA_LogSeverity::Error, TEXT("ANIMATION_SKELETON_MISMATCH"), FString::Printf(TEXT("AnimSequence skeleton does not match the Source Character Mesh skeleton. Remove it or choose the matching Source Mesh: %s"), *AnimSequence->GetPathName()));
             }
         }
     }
@@ -72,7 +72,7 @@ FFRA_PreflightResult FFX_RetargetAssistantPreflightValidator::Validate(const FFR
                 TEXT("RETARGET_OPS_STACK_MISSING"),
                 bGeneratedRetargeter
                     ? TEXT("IK Retargeter has no valid UE5.8 Retarget Ops Stack. Use Recreate Generated Setup before exporting.")
-                    : TEXT("IK Retargeter has no valid UE5.8 Retarget Ops Stack. Open it in the native UE Retargeter editor and add/check default ops; FX Retarget Assistant will not modify user Retargeters."));
+                    : TEXT("IK Retargeter has no valid UE5.8 Retarget Ops Stack. Open it in Unreal's native Retargeter editor and add/check default ops; FX Retarget Assistant will not modify or save user Retargeters outside /Game/FX_RetargetAssistant/Setups/."));
         }
         else
         {
@@ -82,7 +82,7 @@ FFRA_PreflightResult FFX_RetargetAssistantPreflightValidator::Validate(const FFR
 
     if (Input.AssetsToRetarget.Num() > 100)
     {
-        Add(Result, EFRA_LogSeverity::Warning, TEXT("LARGE_BATCH"), FString::Printf(TEXT("Large batch size (%d) may take time and memory."), Input.AssetsToRetarget.Num()));
+        Add(Result, EFRA_LogSeverity::Warning, TEXT("LARGE_BATCH"), FString::Printf(TEXT("Large batch size (%d) may take time and memory. Consider testing a small batch first."), Input.AssetsToRetarget.Num()));
     }
 
     Result.bCanRun = !Result.HasErrors();

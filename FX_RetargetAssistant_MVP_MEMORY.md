@@ -1276,3 +1276,28 @@ Notes:
 - UE reported `project names must not be longer than 20 characters` for the temporary validation project name `FXRA58PackagedValidation`.
   - The plugin is not affected.
   - If the clean validation project needs to be kept long-term, rename future validation project copies to a shorter name such as `FXRA58PkgVal`.
+
+## Phase 33 - MVP1 Alpha Stabilization / User-Facing Polish (2026-06-25)
+
+Status: completed and compiled in UE5.8.
+
+Scope:
+- Do not expand to MetaHuman, CC4, finger chains, or advanced Root Motion controls.
+- Focus on user-facing documentation, Quick Start, tooltips, clearer errors, known limitations, packaged plugin notes, and clean-project validation evidence.
+
+Implemented in this pass:
+- Rewrote `README.md` as the primary user entry point:
+  - current MVP1 Alpha / UE5.8 Packaged Validation status
+  - install path and packaged plugin usage
+  - Quick Start workflow
+  - button descriptions
+  - safety boundaries
+  - UE5.8 Retarget Ops Stack notes
+  - Root Family Directional Policy
+  - output naming policy
+  - known limitations
+  - packaged clean-project validation record
+- Updated `.uplugin` description from old MVP0 manual-retargeter wording to current guided setup + batch export wording.
+- Updated Build Notes with packaged BuildPlugin command, clean project validation result, and future short validation project name `FXRA58PkgVal`.
+- Added UI tooltips for core mesh/animation/retargeter/output controls and primary buttons.
+- Improved Preflight errors so users get next-step guidance instead of only missing-field messages.

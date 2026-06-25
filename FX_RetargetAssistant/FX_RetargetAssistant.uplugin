@@ -3,7 +3,7 @@
   "Version": 1,
   "VersionName": "0.1.0-alpha",
   "FriendlyName": "FX Retarget Assistant",
-  "Description": "Editor-only batch retarget assistant using an existing IK Retargeter.",
+  "Description": "UE5.8 editor-only guided IK Retargeter setup and batch AnimSequence export assistant.",
   "Category": "Animation",
   "CreatedBy": "FX",
   "CanContainContent": false,
