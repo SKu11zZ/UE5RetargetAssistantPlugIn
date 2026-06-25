@@ -257,3 +257,97 @@ Manual visual check required:
 Closure result:
 
 - `FX_RetargetAssistant MVP1 Alpha / UE5.8 Functional Validation Passed / Alpha Closure Passed`
+
+## UE5.8 Packaged Plugin Clean Project Validation
+
+Status: automated packaged-plugin validation passed and user UI visual confirmation passed. Current stage: `FX_RetargetAssistant MVP1 Alpha / UE5.8 Packaged Validation Passed`.
+
+Important scope note:
+
+- This is not Beta.
+- This is not a Release Candidate.
+- It means MVP1 Alpha packaged clean-project validation has passed.
+
+Stage:
+
+```text
+UE5.8 Packaged Plugin Clean Project Validation
+```
+
+BuildPlugin:
+
+- Output path:
+  `C:\FXRA_UE58_Build\FX_RetargetAssistant`
+- Result:
+  `BUILD SUCCESSFUL`
+- Packaged plugin does not include a `Content` folder, so it does not carry FXRA58 temporary setup/export assets.
+
+Clean project:
+
+- New UE5.8 Blank C++ validation project:
+  `F:\Unreal Projects\FXRA58PackagedValidation`
+- Packaged plugin installed under:
+  `F:\Unreal Projects\FXRA58PackagedValidation\Plugins\FX_RetargetAssistant`
+- Project compile:
+  `FXRA58PackagedValidationEditor Win64 Development` passed.
+
+Prepared test assets:
+
+- Copied minimal Mixamo test content:
+  `/Game/FXRA_Imported/`
+- Copied UE Manny / Quinn test content:
+  `/Game/Characters/Mannequins/`
+- Did not copy generated setup/export assets from FXRA58.
+
+Functional validation:
+
+- Commandlet:
+  `FX_RetargetAssistantSmokeTest -FunctionalValidation -nullrhi`
+- Result:
+  `FXRA FUNCTIONAL VALIDATION RESULT: PASS failures=0`
+- Output:
+  `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_152424/`
+
+Verified:
+
+- Generated IK Rig / RTG assets were created under `/Game/FX_RetargetAssistant/Setups/`.
+- Retarget Ops Stack exists and Report.json records:
+  - `retargetOpsStackValid`
+  - `retargetOpsStackCount`
+  - `retargetOpsStackOpTypeNames`
+- Root Family Policy in clean project:
+  - `UEMannequin -> Mixamo`: Root=None; Pelvis/Hips=None.
+  - `Mixamo -> UEMannequin`: Root=None; Pelvis=None.
+  - `UEMannequin -> UEMannequin`: Root->Root; Pelvis->Pelvis.
+- Duplicate outputs exist:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG_001`
+  - `Hip_Hop_Dancing_Anim_RTG_002`
+- Report.json records:
+  - `rootFamilyPolicy`
+  - `rootChainMapping`
+  - `pelvisChainMapping`
+  - `retargetOpsStackValid`
+  - `retargetOpsStackCount`
+  - `namingRule.conflictPolicy = Create Unique Name`
+- Reopen validation:
+  - A second UE commandlet process loaded generated IK Rig / RTG / AnimSequence assets and Report.json successfully.
+
+UI status:
+
+- Clean project Editor was launched.
+- Packaged plugin source confirms panel title:
+  `FX Retarget Assistant - MVP1 Alpha / UE5.8`
+- User visual confirmation passed:
+  - In clean UE5.8 C++ project `FXRA58PackagedValidation`, `Window -> FX Retarget Assistant` opened the panel.
+  - Panel title correctly displayed `FX Retarget Assistant - MVP1 Alpha / UE5.8`.
+
+Project-name note:
+
+- UE reported that project names must not be longer than 20 characters for `FXRA58PackagedValidation`.
+- This warning is about the temporary validation project name, not the plugin.
+- Future clean validation projects should use a shorter name such as `FXRA58PkgVal`.
+
+Final status:
+
+- `FX_RetargetAssistant MVP1 Alpha / UE5.8 Packaged Validation Passed`

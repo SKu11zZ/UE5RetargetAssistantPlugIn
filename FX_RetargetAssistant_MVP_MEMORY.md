@@ -1179,3 +1179,100 @@ Build / validation:
 Known limitation:
 - Direct by-value mutation of `FIKRetargetRootMotionOpSettings` caused an unresolved UE5.8 linker symbol from the plugin module, so enum settings such as `RootMotionSource`, `RootHeightSource`, and `MaintainOffsetFromPelvis` are not yet programmatically changed.
 - Since visual validation passed, deeper Root Motion enum mutation is not required for MVP1 Alpha Closure.
+
+## Phase 32 - UE5.8 Packaged Plugin Clean Project Validation (2026-06-24)
+
+Status: packaged plugin clean-project automated validation passed and user UI visual confirmation passed. Current stage: `FX_RetargetAssistant MVP1 Alpha / UE5.8 Packaged Validation Passed`.
+
+BuildPlugin:
+- Built from source plugin:
+  - `G:\UE5重定向插件开发\插件\FX_RetargetAssistant\FX_RetargetAssistant.uplugin`
+- Packaged to pure-English path:
+  - `C:\FXRA_UE58_Build\FX_RetargetAssistant`
+- Command:
+  - `RunUAT.bat BuildPlugin -Plugin=... -Package=C:\FXRA_UE58_Build\FX_RetargetAssistant -TargetPlatforms=Win64 -Rocket`
+- Result:
+  - `BUILD SUCCESSFUL`
+- Packaged plugin contents:
+  - `FX_RetargetAssistant.uplugin`
+  - `Source`
+  - `Binaries`
+  - `Intermediate`
+  - No `Content` folder was packaged, so the plugin does not carry FXRA58 temporary test assets.
+
+Clean project:
+- Created new UE5.8 Blank C++ validation project:
+  - `F:\Unreal Projects\FXRA58PackagedValidation`
+- Installed packaged plugin under:
+  - `F:\Unreal Projects\FXRA58PackagedValidation\Plugins\FX_RetargetAssistant`
+- Project build:
+  - `FXRA58PackagedValidationEditor Win64 Development`
+  - Result: succeeded.
+
+Minimal test assets:
+- Prepared clean-project test content by copying only test assets:
+  - `Content\FXRA_Imported` for Mixamo `Center_Block` and animations.
+  - `Content\Characters\Mannequins` for Manny / Quinn / UE animation assets.
+- Did not copy FXRA58 generated setup/export assets.
+- In the clean project, setup/export assets were generated fresh by the packaged plugin.
+
+Packaged plugin functional validation:
+- Ran:
+  - `UnrealEditor-Cmd.exe FXRA58PackagedValidation.uproject -run=FX_RetargetAssistantSmokeTest -FunctionalValidation -unattended -nop4 -nullrhi -log`
+- Result:
+  - `FXRA FUNCTIONAL VALIDATION RESULT: PASS failures=0`
+- Output:
+  - `/Game/FX_RetargetAssistant/Exports/FunctionalValidation_20260624_152424/`
+- Verified generated setup assets exist under:
+  - `/Game/FX_RetargetAssistant/Setups/Center_Block_to_SKM_Manny_Simple/`
+  - `/Game/FX_RetargetAssistant/Setups/SKM_Manny_Simple_to_Center_Block/`
+  - `/Game/FX_RetargetAssistant/Setups/SKM_Manny_Simple_to_SKM_Quinn_Simple/`
+- Verified Retarget Ops Stack:
+  - `retargetOpsStackValid = true`
+  - `retargetOpsStackCount = 5`
+  - op type names recorded in Report.json.
+- Verified root-family policies in clean project reports:
+  - `UEMannequin -> Mixamo`: Root=None, Pelvis/Hips=None.
+  - `Mixamo -> UEMannequin`: Root=None, Pelvis=None.
+  - `UEMannequin -> UEMannequin`: Root->Root, Pelvis->Pelvis.
+- Verified duplicate naming assets exist:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG_001`
+  - `Hip_Hop_Dancing_Anim_RTG_002`
+- Verified Report.json fields:
+  - `rootFamilyPolicy`
+  - `rootChainMapping`
+  - `pelvisChainMapping`
+  - `retargetOpsStackValid`
+  - `retargetOpsStackCount`
+  - `namingRule.conflictPolicy = Create Unique Name`
+
+Reopen validation:
+- Ran a second Unreal commandlet process with an English-path Python check:
+  - `C:\FXRA_UE58_Build\reopen_check.py`
+- Loaded generated IK Rigs, generated RTGs, exported AnimSequence assets, duplicate-name outputs, and Report.json.
+- Result:
+  - Python script executed successfully.
+  - `Success - 0 error(s), 0 warning(s)`.
+
+Editor UI:
+- Launched clean validation project Editor:
+  - `F:\Unreal Projects\FXRA58PackagedValidation\FXRA58PackagedValidation.uproject`
+- Packaged plugin source confirms:
+  - Tab/menu registration: `FX Retarget Assistant`
+  - Panel title string: `FX Retarget Assistant - MVP1 Alpha / UE5.8`
+- User visual confirmation passed:
+  - In clean UE5.8 C++ project `FXRA58PackagedValidation`, `Window -> FX Retarget Assistant` opened the panel.
+  - Panel title correctly displayed `FX Retarget Assistant - MVP1 Alpha / UE5.8`.
+
+Final stage:
+- `FX_RetargetAssistant MVP1 Alpha / UE5.8 Packaged Validation Passed`
+- This is not Beta and not a Release Candidate. It means MVP1 Alpha packaged clean-project validation has passed.
+
+Notes:
+- A separate UE Editor process `motionrenderue - Unreal Editor` was detected and was not touched.
+- The independent `ResearchOnUENewTools` project was not opened, closed, or modified.
+- The first Python reopen script attempt failed only because the script was referenced from a Chinese path; rerunning from `C:\FXRA_UE58_Build\reopen_check.py` passed. Keep UE automation scripts on English paths.
+- UE reported `project names must not be longer than 20 characters` for the temporary validation project name `FXRA58PackagedValidation`.
+  - The plugin is not affected.
+  - If the clean validation project needs to be kept long-term, rename future validation project copies to a shorter name such as `FXRA58PkgVal`.
