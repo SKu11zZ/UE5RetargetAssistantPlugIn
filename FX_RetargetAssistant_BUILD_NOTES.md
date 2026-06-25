@@ -153,3 +153,63 @@ FX_RetargetAssistant MVP1 Alpha / UE5.8 Packaged Validation Passed
 ```
 
 This is not Beta and not a Release Candidate.
+
+## UE5.8 Beta-Gate Release Hygiene Pass
+
+Result: passed.
+
+Phase:
+
+```text
+MVP1 Alpha Beta-Gate / Release Hygiene Pass
+```
+
+Final state:
+
+```text
+FX_RetargetAssistant MVP1 Alpha / Beta-Gate Hygiene Pass Completed
+```
+
+BuildPlugin command:
+
+```powershell
+& 'F:\Epic Games\UE_5.8\Engine\Build\BatchFiles\RunUAT.bat' BuildPlugin -Plugin='G:\UE5重定向插件开发\插件\FX_RetargetAssistant\FX_RetargetAssistant.uplugin' -Package='C:\FXRA_UE58_Build\FX_RetargetAssistant' -TargetPlatforms=Win64 -Rocket
+```
+
+Observed result:
+
+- `BUILD SUCCESSFUL`
+- Packaged plugin output: `C:\FXRA_UE58_Build\FX_RetargetAssistant`
+- Packaged plugin contains no `Content` folder.
+- Packaged plugin does not depend on FXRA58 temporary setup/export assets.
+
+Clean validation project:
+
+```text
+F:\Unreal Projects\FXRA58PkgVal
+```
+
+Observed clean-project results:
+
+- `FXRA58PkgValEditor Win64 Development` build passed.
+- Packaged plugin mounted as a project plugin.
+- Source/menu registration confirms `Window -> FX Retarget Assistant`.
+- Panel title string remains `FX Retarget Assistant - MVP1 Alpha / UE5.8`.
+- Functional validation passed in the clean project:
+  - Mixamo -> UE Manny
+  - UE Manny -> Mixamo
+  - Manny -> Quinn
+  - duplicate output naming
+  - user Retargeter safety
+- Duplicate naming generated:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG_001`
+  - `Hip_Hop_Dancing_Anim_RTG_002`
+- `Report.json` records root-family policy, chain mapping, Retarget Ops Stack validity/count, and naming rule.
+- Reopen commandlet loaded generated IK Rig, generated RTG, exported AnimSequence assets, duplicate outputs, and `Report.json`.
+
+Repository hygiene:
+
+- Do not commit generated clean-project assets.
+- Do not commit `Binaries`, `Intermediate`, `Saved`, `DerivedDataCache`, FunctionalValidation exports, or generated setup/export assets.
+- Use short clean validation project name `FXRA58PkgVal`; UE warns when project names exceed 20 characters.

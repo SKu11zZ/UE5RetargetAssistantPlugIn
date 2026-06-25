@@ -4,9 +4,9 @@ FX_RetargetAssistant is a UE5.8 editor plugin for guided IK Retargeter setup and
 
 Current status:
 
-`MVP1 Alpha / UE5.8 Packaged Validation Passed`
+`MVP1 Alpha / Beta-Gate Hygiene Pass Completed`
 
-This is not Beta and not a Release Candidate. The MVP1 Alpha workflow has passed clean-project packaged validation on UE5.8.
+This is not Beta and not a Release Candidate. The MVP1 Alpha workflow has passed UE5.8 clean-project packaged validation and the Beta-Gate release-hygiene pass.
 
 ## What It Does
 
@@ -162,6 +162,12 @@ Existing assets are not overwritten by default. Duplicate outputs become:
 
 The current packaged validation was run in a clean UE5.8 C++ project with the packaged plugin installed as a project plugin.
 
+Latest clean validation project:
+
+```text
+F:\Unreal Projects\FXRA58PkgVal
+```
+
 Validated:
 
 - Plugin mounts in a clean UE5.8 project.
@@ -172,6 +178,8 @@ Validated:
 - Root Family Directional Policy is recorded in `Report.json`.
 - Duplicate exports generate `_001` and `_002`.
 - Generated IK Rig / RTG / AnimSequence assets load after reopening.
+- User Retargeters outside `/Game/FX_RetargetAssistant/Setups/` remain read-only during Auto Repair.
+- `git diff --check` passes before commit.
 
 ## Development Notes
 

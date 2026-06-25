@@ -1301,3 +1301,58 @@ Implemented in this pass:
 - Updated Build Notes with packaged BuildPlugin command, clean project validation result, and future short validation project name `FXRA58PkgVal`.
 - Added UI tooltips for core mesh/animation/retargeter/output controls and primary buttons.
 - Improved Preflight errors so users get next-step guidance instead of only missing-field messages.
+
+## Phase 34 - MVP1 Alpha Beta-Gate / Release Hygiene Pass (2026-06-25)
+
+Status: completed. Current state: `FX_RetargetAssistant MVP1 Alpha / Beta-Gate Hygiene Pass Completed`.
+
+Scope:
+- Release hygiene only.
+- No MetaHuman, CC4, finger-chain, advanced Root Motion, or low-version compatibility work.
+- UE5.8 remains the only active target.
+
+BuildPlugin:
+- Rebuilt packaged plugin with UE5.8 using pure-English package path:
+  - `C:\FXRA_UE58_Build\FX_RetargetAssistant`
+- Result: `BUILD SUCCESSFUL`.
+- Packaged plugin contains no `Content` folder, so it does not carry FXRA58 temporary setup/export/test content.
+
+Clean project:
+- Created short-name clean UE5.8 C++ validation project:
+  - `F:\Unreal Projects\FXRA58PkgVal`
+- Installed packaged plugin to:
+  - `F:\Unreal Projects\FXRA58PkgVal\Plugins\FX_RetargetAssistant`
+- Built `FXRA58PkgValEditor Win64 Development` successfully.
+
+Functional validation:
+- Copied only minimal test content assets into the clean project:
+  - `Content/FXRA_Imported`
+  - `Content/Characters/Mannequins`
+- Did not migrate generated setup/export assets from FXRA58.
+- Ran `FX_RetargetAssistantSmokeTest -FunctionalValidation` in `FXRA58PkgVal`.
+- Result: `FXRA FUNCTIONAL VALIDATION RESULT: PASS failures=0`.
+
+Validated cases:
+- Mixamo -> UE Manny passed.
+- UE Manny -> Mixamo passed.
+- Manny -> Quinn passed.
+- Duplicate output naming passed:
+  - `Hip_Hop_Dancing_Anim_RTG`
+  - `Hip_Hop_Dancing_Anim_RTG_001`
+  - `Hip_Hop_Dancing_Anim_RTG_002`
+- User Retargeter safety passed:
+  - `/Game/FXRA_UserTest/RTG_UserOwned_Test` received Warning only and was not auto-modified.
+
+Report / reopen checks:
+- `Report.json` verified for engine version, setup mode, source/target mesh and skeletons, generated setup assets, source/target skeleton family, root-family policy, root/pelvis chain mapping, Retarget Ops Stack validity/count, naming rule, animations, summary, and warnings.
+- Fresh commandlet process loaded generated IK Rig, generated RTG, exported AnimSequence assets, duplicate outputs, and `Report.json`.
+
+UI / docs:
+- UI title remains `FX Retarget Assistant - MVP1 Alpha / UE5.8`.
+- Menu registration remains `Window -> FX Retarget Assistant`.
+- Tooltip, Preflight guidance, Show Output Folder wording, and Quick Start alignment reviewed.
+- Added `FX_RetargetAssistant_BETA_GATE_CHECKLIST.md`.
+
+Important status:
+- This is still not Beta and not a Release Candidate.
+- Next Beta step should be tester-facing distribution packaging and another manual real-editor UI/visual pass from a fresh environment.
