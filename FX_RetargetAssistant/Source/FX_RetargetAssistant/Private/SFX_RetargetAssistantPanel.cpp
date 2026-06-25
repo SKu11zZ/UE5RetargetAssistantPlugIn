@@ -35,6 +35,57 @@
 
 void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
 {
+    const FSlateFontInfo LabelFont = FCoreStyle::GetDefaultFontStyle("Regular", 9);
+    const FSlateFontInfo SubLabelFont = FCoreStyle::GetDefaultFontStyle("Regular", 8);
+    const FSlateFontInfo ButtonFont = FCoreStyle::GetDefaultFontStyle("Bold", 9);
+    const FSlateFontInfo ButtonSubFont = FCoreStyle::GetDefaultFontStyle("Regular", 8);
+
+    auto MakeBilingualLabel = [LabelFont, SubLabelFont](const FText& English, const FText& Chinese)
+    {
+        return SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            [
+                SNew(STextBlock)
+                .Text(English)
+                .Font(LabelFont)
+            ]
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0, 1, 0, 0)
+            [
+                SNew(STextBlock)
+                .Text(Chinese)
+                .Font(SubLabelFont)
+                .ColorAndOpacity(FSlateColor(FLinearColor(0.62f, 0.62f, 0.62f, 1.0f)))
+            ];
+    };
+
+    auto MakeBilingualButton = [ButtonFont, ButtonSubFont](const FText& English, const FText& Chinese)
+    {
+        return SNew(SVerticalBox)
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(HAlign_Center)
+            [
+                SNew(STextBlock)
+                .Text(English)
+                .Font(ButtonFont)
+                .Justification(ETextJustify::Center)
+            ]
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .HAlign(HAlign_Center)
+            .Padding(0, 1, 0, 0)
+            [
+                SNew(STextBlock)
+                .Text(Chinese)
+                .Font(ButtonSubFont)
+                .Justification(ETextJustify::Center)
+                .ColorAndOpacity(FSlateColor(FLinearColor(0.78f, 0.78f, 0.78f, 1.0f)))
+            ];
+    };
+
     ChildSlot
     [
         SNew(SBorder)
@@ -55,8 +106,22 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
             .AutoHeight()
             .Padding(0, 0, 0, 8)
             [
-                SNew(STextBlock)
-                .Text(LOCTEXT("Scope", "Guided workflow: choose Source/Target Character Meshes, add Source Skeleton-matching animations, then use an existing or generated IK Retargeter to export."))
+                SNew(SVerticalBox)
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                [
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("Scope", "Guided workflow: choose Source/Target Character Meshes, add Source Skeleton-matching animations, then use an existing or generated IK Retargeter to export."))
+                ]
+                + SVerticalBox::Slot()
+                .AutoHeight()
+                .Padding(0, 2, 0, 0)
+                [
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("ScopeCN", "引导流程：选择源/目标角色，添加匹配源骨架的动画，然后使用已有或生成的 IK Retargeter 导出。"))
+                    .Font(SubLabelFont)
+                    .ColorAndOpacity(FSlateColor(FLinearColor(0.62f, 0.62f, 0.62f, 1.0f)))
+                ]
             ]
 
             + SVerticalBox::Slot()
@@ -65,7 +130,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                 SNew(SGridPanel)
                 + SGridPanel::Slot(0, 0).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("SourceMesh", "Step 1 - Source Character Mesh"))
+                    MakeBilingualLabel(LOCTEXT("SourceMesh", "Step 1 - Source Character Mesh"), LOCTEXT("SourceMeshCN", "第 1 步 - 源角色网格"))
                 ]
                 + SGridPanel::Slot(1, 0).Padding(8, 3)
                 [
@@ -89,13 +154,13 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .Padding(0, 3, 0, 0)
                     [
                         SNew(STextBlock)
-                        .Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("Source Skeleton: %s"), *GetSourceSkeletonPath())); })
+                        .Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("Source Skeleton / 源骨架: %s"), *GetSourceSkeletonPath())); })
                     ]
                 ]
 
                 + SGridPanel::Slot(0, 1).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("TargetMesh", "Step 1 - Target Character Mesh"))
+                    MakeBilingualLabel(LOCTEXT("TargetMesh", "Step 1 - Target Character Mesh"), LOCTEXT("TargetMeshCN", "第 1 步 - 目标角色网格"))
                 ]
                 + SGridPanel::Slot(1, 1).Padding(8, 3)
                 [
@@ -123,13 +188,13 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .Padding(0, 3, 0, 0)
                     [
                         SNew(STextBlock)
-                        .Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("Target Skeleton: %s"), *GetTargetSkeletonPath())); })
+                        .Text_Lambda([this]() { return FText::FromString(FString::Printf(TEXT("Target Skeleton / 目标骨架: %s"), *GetTargetSkeletonPath())); })
                     ]
                 ]
 
                 + SGridPanel::Slot(0, 2).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("AnimSequence", "Step 2 - Anim Clip"))
+                    MakeBilingualLabel(LOCTEXT("AnimSequence", "Step 2 - Anim Clip"), LOCTEXT("AnimSequenceCN", "第 2 步 - 动画片段"))
                 ]
                 + SGridPanel::Slot(1, 2).Padding(8, 3)
                 [
@@ -159,15 +224,30 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .Padding(6, 0, 0, 0)
                     [
                         SNew(SButton)
-                        .Text(LOCTEXT("AddPickedAnimation", "Add"))
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("AddPickedAnimation", "Add"), LOCTEXT("AddPickedAnimationCN", "添加"))
+                        ]
                         .ToolTipText(LOCTEXT("AddPickedAnimationTooltip", "Add the picked AnimSequence to the batch list if it matches the Source Skeleton."))
                         .OnClicked(this, &SFX_RetargetAssistantPanel::AddPickedAnimation)
+                    ]
+                    + SHorizontalBox::Slot()
+                    .AutoWidth()
+                    .Padding(6, 0, 0, 0)
+                    [
+                        SNew(SButton)
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("ClearAnimations", "Clear Animations"), LOCTEXT("ClearAnimationsCN", "清空动画"))
+                        ]
+                        .ToolTipText(LOCTEXT("ClearAnimationsTooltip", "Remove all AnimSequence assets from the current batch list."))
+                        .OnClicked(this, &SFX_RetargetAssistantPanel::ClearAnimations)
                     ]
                 ]
 
                 + SGridPanel::Slot(0, 3).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("RetargetSetup", "Step 3 - Retarget Setup"))
+                    MakeBilingualLabel(LOCTEXT("RetargetSetup", "Step 3 - Retarget Setup"), LOCTEXT("RetargetSetupCN", "第 3 步 - 重定向设置"))
                 ]
                 + SGridPanel::Slot(1, 3).Padding(8, 3)
                 [
@@ -195,7 +275,10 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .Padding(6, 0, 0, 0)
                     [
                         SNew(SButton)
-                        .Text(LOCTEXT("OpenRetargeter", "Open"))
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("OpenRetargeter", "Open"), LOCTEXT("OpenRetargeterCN", "打开"))
+                        ]
                         .ToolTipText(LOCTEXT("OpenRetargeterTooltip", "Open the selected IK Retargeter in Unreal's native Retargeter editor for review or manual adjustment."))
                         .IsEnabled_Lambda([this]() { return RetargeterObject.IsValid(); })
                         .OnClicked(this, &SFX_RetargetAssistantPanel::OpenRetargeter)
@@ -204,9 +287,54 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
 
                 + SGridPanel::Slot(0, 4).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("OutputFolder", "Step 4 - Output Folder"))
+                    MakeBilingualLabel(LOCTEXT("RetargetSetupTools", "Setup Tools"), LOCTEXT("RetargetSetupToolsCN", "设置工具"))
                 ]
                 + SGridPanel::Slot(1, 4).Padding(8, 3)
+                [
+                    SNew(SHorizontalBox)
+                    + SHorizontalBox::Slot()
+                    .FillWidth(1.0f)
+                    [
+                        SNew(SButton)
+                        .ButtonColorAndOpacity(FLinearColor(0.10f, 0.34f, 0.78f, 1.0f))
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("AutoCreateSetup", "Auto Create IK Rig + RTG"), LOCTEXT("AutoCreateSetupCN", "自动创建 IK Rig + 重定向器"))
+                        ]
+                        .ToolTipText(LOCTEXT("AutoCreateSetupTooltip", "Create or reuse plugin-generated IK Rig and IK Retargeter assets under /Game/FX_RetargetAssistant/Setups/. Existing valid generated Retargeters are reused without overwriting manual edits."))
+                        .OnClicked(this, &SFX_RetargetAssistantPanel::AutoCreateSetup)
+                    ]
+                    + SHorizontalBox::Slot()
+                    .FillWidth(1.0f)
+                    .Padding(6, 0, 0, 0)
+                    [
+                        SNew(SButton)
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("RecreateSetup", "Recreate Generated Setup"), LOCTEXT("RecreateSetupCN", "重建生成设置"))
+                        ]
+                        .ToolTipText(LOCTEXT("RecreateSetupTooltip", "Explicitly rebuild and save plugin-generated setup assets. Only use this when you want to discard generated setup changes. User Retargeters outside the setup folder are not modified."))
+                        .OnClicked(this, &SFX_RetargetAssistantPanel::RecreateGeneratedSetup)
+                    ]
+                    + SHorizontalBox::Slot()
+                    .FillWidth(1.0f)
+                    .Padding(6, 0, 0, 0)
+                    [
+                        SNew(SButton)
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("AutoRepairMapping", "Auto Repair IK Mapping"), LOCTEXT("AutoRepairMappingCN", "自动修复 IK 映射"))
+                        ]
+                        .ToolTipText(LOCTEXT("AutoRepairMappingTooltip", "Repair only plugin-generated Retargeters under /Game/FX_RetargetAssistant/Setups/. User Retargeters are left untouched and will receive a warning."))
+                        .OnClicked(this, &SFX_RetargetAssistantPanel::AutoRepairIKMapping)
+                    ]
+                ]
+
+                + SGridPanel::Slot(0, 5).Padding(0, 3)
+                [
+                    MakeBilingualLabel(LOCTEXT("OutputFolder", "Step 4 - Output Folder"), LOCTEXT("OutputFolderCN", "第 4 步 - 输出文件夹"))
+                ]
+                + SGridPanel::Slot(1, 5).Padding(8, 3)
                 [
                     SNew(SHorizontalBox)
                     + SHorizontalBox::Slot()
@@ -224,7 +352,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                         .ToolTipText(LOCTEXT("BrowseOutputTooltip", "Pick an output folder from the Content Browser path tree."))
                         .ButtonContent()
                         [
-                            SNew(STextBlock).Text(LOCTEXT("BrowseOutput", "Browse..."))
+                            MakeBilingualButton(LOCTEXT("BrowseOutput", "Browse..."), LOCTEXT("BrowseOutputCN", "浏览"))
                         ]
                         .MenuContent()
                         [
@@ -236,28 +364,31 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                     .Padding(6, 0, 0, 0)
                     [
                         SNew(SButton)
-                        .Text(LOCTEXT("UseSelectedFolder", "Use Selected Folder"))
+                        .Content()
+                        [
+                            MakeBilingualButton(LOCTEXT("UseSelectedFolder", "Use Selected Folder"), LOCTEXT("UseSelectedFolderCN", "使用所选文件夹"))
+                        ]
                         .ToolTipText(LOCTEXT("UseSelectedFolderTooltip", "Use the folder currently selected in the Content Browser as the output folder."))
                         .OnClicked(this, &SFX_RetargetAssistantPanel::UseSelectedOutputFolder)
                     ]
                 ]
 
-                + SGridPanel::Slot(0, 5).Padding(0, 3)
+                + SGridPanel::Slot(0, 6).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("Suffix", "Suffix"))
+                    MakeBilingualLabel(LOCTEXT("Suffix", "Suffix"), LOCTEXT("SuffixCN", "后缀"))
                 ]
-                + SGridPanel::Slot(1, 5).Padding(8, 3)
+                + SGridPanel::Slot(1, 6).Padding(8, 3)
                 [
                     SAssignNew(SuffixTextBox, SEditableTextBox)
                     .ToolTipText(LOCTEXT("SuffixTooltip", "Suffix appended to exported AnimSequence asset names. Existing assets are not overwritten; unique names use _001, _002, and so on."))
                     .Text(FText::FromString(TEXT("_RTG")))
                 ]
 
-                + SGridPanel::Slot(0, 6).Padding(0, 3)
+                + SGridPanel::Slot(0, 7).Padding(0, 3)
                 [
-                    SNew(STextBlock).Text(LOCTEXT("SetupStatusLabel", "Setup Status"))
+                    MakeBilingualLabel(LOCTEXT("SetupStatusLabel", "Setup Status"), LOCTEXT("SetupStatusLabelCN", "设置状态"))
                 ]
-                + SGridPanel::Slot(1, 6).Padding(8, 3)
+                + SGridPanel::Slot(1, 7).Padding(8, 3)
                 [
                     SNew(STextBlock).Text_Lambda([this]() { return GetSetupStatusText(); })
                 ]
@@ -267,61 +398,40 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
             .AutoHeight()
             .Padding(0, 10, 0, 6)
             [
-                SNew(SUniformGridPanel)
-                .SlotPadding(4)
-                + SUniformGridPanel::Slot(0, 0)
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f)
                 [
                     SNew(SButton)
-                    .Text(LOCTEXT("UseSelected", "Add Selected"))
+                    .Content()
+                    [
+                        MakeBilingualButton(LOCTEXT("UseSelected", "Add Selected"), LOCTEXT("UseSelectedCN", "添加所选动画"))
+                    ]
                     .ToolTipText(LOCTEXT("AddSelectedTooltip", "Add selected AnimSequence assets from the Content Browser. Only animations matching the Source Skeleton are accepted."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::UseSelectedAnimations)
                 ]
-                + SUniformGridPanel::Slot(1, 0)
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f)
+                .Padding(8, 0, 0, 0)
                 [
                     SNew(SButton)
-                    .Text(LOCTEXT("AutoCreateSetup", "Auto Create IK Rig + Retargeter"))
-                    .ToolTipText(LOCTEXT("AutoCreateSetupTooltip", "Create or reuse plugin-generated IK Rig and IK Retargeter assets under /Game/FX_RetargetAssistant/Setups/. Existing valid generated Retargeters are reused without overwriting manual edits."))
-                    .OnClicked(this, &SFX_RetargetAssistantPanel::AutoCreateSetup)
-                ]
-                + SUniformGridPanel::Slot(2, 0)
-                [
-                    SNew(SButton)
-                    .Text(LOCTEXT("RecreateSetup", "Recreate Generated Setup"))
-                    .ToolTipText(LOCTEXT("RecreateSetupTooltip", "Explicitly rebuild and save plugin-generated setup assets. Only use this when you want to discard generated setup changes. User Retargeters outside the setup folder are not modified."))
-                    .OnClicked(this, &SFX_RetargetAssistantPanel::RecreateGeneratedSetup)
-                ]
-                + SUniformGridPanel::Slot(3, 0)
-                [
-                    SNew(SButton)
-                    .Text(LOCTEXT("AutoRepairMapping", "Auto Repair IK Mapping"))
-                    .ToolTipText(LOCTEXT("AutoRepairMappingTooltip", "Repair only plugin-generated Retargeters under /Game/FX_RetargetAssistant/Setups/. User Retargeters are left untouched and will receive a warning."))
-                    .OnClicked(this, &SFX_RetargetAssistantPanel::AutoRepairIKMapping)
-                ]
-                + SUniformGridPanel::Slot(0, 1)
-                [
-                    SNew(SButton)
-                    .Text(LOCTEXT("ClearAnimations", "Clear Animations"))
-                    .ToolTipText(LOCTEXT("ClearAnimationsTooltip", "Remove all AnimSequence assets from the current batch list."))
-                    .OnClicked(this, &SFX_RetargetAssistantPanel::ClearAnimations)
-                ]
-                + SUniformGridPanel::Slot(1, 1)
-                [
-                    SNew(SButton)
-                    .Text(LOCTEXT("ShowOutputFolder", "Show Output Folder"))
-                    .ToolTipText(LOCTEXT("ShowOutputFolderTooltip", "Sync the Content Browser to the output folder after export."))
-                    .OnClicked(this, &SFX_RetargetAssistantPanel::ShowOutputFolder)
-                ]
-                + SUniformGridPanel::Slot(2, 1)
-                [
-                    SNew(SButton)
-                    .Text(LOCTEXT("Preflight", "Preflight"))
+                    .Content()
+                    [
+                        MakeBilingualButton(LOCTEXT("Preflight", "Preflight"), LOCTEXT("PreflightCN", "预检查"))
+                    ]
                     .ToolTipText(LOCTEXT("PreflightTooltip", "Validate meshes, animations, output folder, selected Retargeter, and UE5.8 Retarget Ops Stack before export."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::RunPreflight)
                 ]
-                + SUniformGridPanel::Slot(3, 1)
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f)
+                .Padding(8, 0, 0, 0)
                 [
                     SNew(SButton)
-                    .Text(LOCTEXT("Execute", "Retarget && Export"))
+                    .ButtonColorAndOpacity(FLinearColor(0.12f, 0.55f, 0.23f, 1.0f))
+                    .Content()
+                    [
+                        MakeBilingualButton(LOCTEXT("Execute", "Retarget && Export"), LOCTEXT("ExecuteCN", "重定向并导出"))
+                    ]
                     .ToolTipText(LOCTEXT("ExecuteTooltip", "Export selected AnimSequences using the current IK Retargeter. This action does not create setup assets, auto-repair mapping, Auto Align, or modify user Retargeters."))
                     .OnClicked(this, &SFX_RetargetAssistantPanel::ExecuteBatchRetarget)
                 ]
@@ -334,7 +444,7 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                 SNew(STextBlock)
                 .Text_Lambda([this]()
                 {
-                    return FText::FromString(FString::Printf(TEXT("Selected AnimSequence: %d"), SelectedAnimations.Num()));
+                    return FText::FromString(FString::Printf(TEXT("Selected AnimSequence / 已选动画: %d"), SelectedAnimations.Num()));
                 })
             ]
 
@@ -354,6 +464,33 @@ void SFX_RetargetAssistantPanel::Construct(const FArguments& InArgs)
                 SAssignNew(LogTextBox, SMultiLineEditableTextBox)
                 .IsReadOnly(true)
                 .AutoWrapText(true)
+            ]
+
+            + SVerticalBox::Slot()
+            .AutoHeight()
+            .Padding(0, 6, 0, 0)
+            [
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot()
+                .FillWidth(1.0f)
+                [
+                    SNew(STextBlock)
+                    .Text(LOCTEXT("OutputHint", "After export, use Show Output Folder to locate generated animations and Report.json."))
+                    .Font(SubLabelFont)
+                    .ColorAndOpacity(FSlateColor(FLinearColor(0.62f, 0.62f, 0.62f, 1.0f)))
+                ]
+                + SHorizontalBox::Slot()
+                .AutoWidth()
+                .Padding(8, 0, 0, 0)
+                [
+                    SNew(SButton)
+                    .Content()
+                    [
+                        MakeBilingualButton(LOCTEXT("ShowOutputFolder", "Show Output Folder"), LOCTEXT("ShowOutputFolderCN", "显示输出文件夹"))
+                    ]
+                    .ToolTipText(LOCTEXT("ShowOutputFolderTooltip", "Sync the Content Browser to the output folder after export."))
+                    .OnClicked(this, &SFX_RetargetAssistantPanel::ShowOutputFolder)
+                ]
             ]
         ]
     ];
