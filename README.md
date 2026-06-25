@@ -1,10 +1,229 @@
 # FX_RetargetAssistant / 重定向小助手
 
+中文 | [English](#english)
+
+FX_RetargetAssistant（重定向小助手）是一个面向 Unreal Engine 5.8 的编辑器插件，用于辅助创建 IK Retargeter 设置，并批量导出重定向后的 AnimSequence。
+
+当前状态：
+
+```text
+MVP1 Alpha / Beta-Gate Hygiene Pass Completed
+```
+
+这不是 Beta，也不是 Release Candidate。当前 MVP1 Alpha 流程已经通过 UE5.8 干净项目 packaged plugin 验证，并完成 Beta-Gate release-hygiene pass。
+
+## 功能概览
+
+FX_RetargetAssistant 不替代 Unreal Engine 原生 IK Rig / IK Retargeter 工具。它的目标是把常见动画重定向流程包成一个更安全、更清晰的引导式面板：
+
+1. 选择 Source Character Mesh。
+2. 选择 Target Character Mesh。
+3. 添加匹配 Source Skeleton 的 AnimSequence。
+4. 创建或复用插件生成的 IK Rig / IK Retargeter setup 资产。
+5. 打开生成的 Retargeter，进行检查或手动微调。
+6. 批量重定向并导出一个或多个动画。
+7. 检查导出的 AnimSequence 和 `Report.json`。
+
+当前 MVP1 重点验证路径：
+
+- Mixamo -> UE Mannequin
+- UE Mannequin -> Mixamo
+- UE Mannequin -> UE Mannequin
+
+## 安装
+
+使用纯英文路径打包出来的插件：
+
+```text
+C:\FXRA_UE58_Build\FX_RetargetAssistant
+```
+
+把 packaged plugin 文件夹复制到你的 UE5.8 项目：
+
+```text
+YourProject/Plugins/FX_RetargetAssistant
+```
+
+然后重新编译或重新打开项目。该插件是 editor-only 插件，目前只支持 Unreal Engine 5.8。
+
+## 打开面板
+
+在 Unreal Editor 中：
+
+```text
+Window -> FX Retarget Assistant
+```
+
+面板标题应显示：
+
+```text
+FX Retarget Assistant - MVP1 Alpha / UE5.8
+```
+
+## 快速开始
+
+1. 选择 `Step 1 - Source Character Mesh`。
+2. 选择 `Step 1 - Target Character Mesh`。
+3. 使用 `Step 2 - Anim Clip` 或 `Add Selected` 添加使用 Source Mesh skeleton 的动画。
+4. 点击 `Auto Create IK Rig + Retargeter`。
+5. 检查 `Setup Status`。
+   - `Ready`：可以继续。
+   - `Needs Review`：可用，但建议检查 warning 或打开 Retargeter。
+   - `Missing Chains` / `Invalid`：导出前需要先修复 setup。
+6. 点击 `Step 3 - Retarget Setup` 旁边的 `Open`，在 UE 原生 Retargeter 编辑器中检查生成的 Retargeter。
+7. 选择 `Step 4 - Output Folder`。
+8. 点击 `Preflight`。
+9. 点击 `Retarget & Export`。
+10. 点击 `Show Output Folder`，检查导出的 AnimSequence 和 `Report.json`。
+
+## 主要按钮
+
+- `Add Selected`：从 Content Browser 添加选中的 AnimSequence。Skeleton 不匹配的动画会被过滤或提示 warning。
+- `Auto Create IK Rig + Retargeter`：在 `/Game/FX_RetargetAssistant/Setups/` 下创建或复用插件生成的 setup 资产。
+- `Recreate Generated Setup`：显式重建插件生成的 IK Rig / IK Retargeter。用于生成 setup 过期或需要重建的情况。
+- `Auto Repair IK Mapping`：只修复插件生成的 setup 资产。不会修改 setup 文件夹外的用户 Retargeter。
+- `Clear Animations`：清空当前动画列表。
+- `Show Output Folder`：在 Content Browser 中定位当前输出文件夹。
+- `Preflight`：检查 mesh、Retargeter、动画、输出路径和 UE5.8 Retarget Ops Stack。
+- `Retarget & Export`：导出选中的 AnimSequence。不会创建 setup 资产，也不会修改用户 Retargeter。
+
+## 安全边界
+
+- `Retarget & Export` 只负责导出。
+- 它不会创建 IK Rig。
+- 它不会创建 IK Retargeter。
+- 它不会修复 mapping。
+- 它不会 Auto Align。
+- 它不会修改用户手动选择的 Retargeter。
+- Auto Repair 和 Recreate 只允许修改插件生成路径下的 setup 资产：
+
+```text
+/Game/FX_RetargetAssistant/Setups/
+```
+
+- 该路径外的手动/用户 Retargeter 默认只读。
+- `Auto Create` 在已有 generated setup 且 UE5.8 Retarget Ops Stack 有效时会复用资产，不覆盖用户可能做过的手动微调。
+- `Recreate Generated Setup` 才是显式重建 generated setup 的路径。
+
+## UE5.8 Retarget Ops Stack
+
+UE5.8 中，生成式 IK Retargeter 必须拥有有效的 Retarget Ops Stack。只配置 IK Rig 引用、Preview Mesh、Chain Mapping、Auto Align 和 Root Family Directional Policy 还不够。
+
+- Initial Create 和 Recreate 会创建 UE5.8 默认 Retarget Ops。
+- 已存在且 Ops Stack 有效的 generated Retargeter 会被复用，不执行 Remove Ops / Add Default Ops / Save。
+- 缺少 Ops Stack 的 generated Retargeter 会被视为 invalid setup，并且只允许在 `/Game/FX_RetargetAssistant/Setups/` 内修复。
+- 用户 Retargeter 不会被自动修改。Preflight 会报告缺失 Ops Stack 并阻止导出。
+
+## Root Family Directional Policy
+
+Root-family chain 不能像 Spine、Arm、Leg 一样做普通 Exact Automap。
+
+- `UEMannequin -> Mixamo`
+  - Source Retarget Root = `pelvis`
+  - Target Retarget Root = `Hips`
+  - Target Chain `Root` -> Source Chain `None`
+  - Target Chain `Pelvis/Hips` -> Source Chain `None`
+- `Mixamo -> UEMannequin`
+  - Source Retarget Root = `Hips`
+  - Target Retarget Root = `pelvis`
+  - Target Chain `Root` -> Source Chain `None`
+  - Target Chain `Pelvis` -> Source Chain `None`
+- `UEMannequin -> UEMannequin`
+  - Root -> Root
+  - Pelvis -> Pelvis
+- `Mixamo -> Mixamo`
+  - Retarget Root 使用 `Hips`
+  - Target Chain `Root` 默认 `None`
+
+这些规则只作用于插件生成的 setup 资产，以及用户显式修复的插件生成 setup 资产。
+
+## 输出策略
+
+默认冲突策略：`Create Unique Name`。
+
+默认不覆盖已有资产。同名导出会生成：
+
+- `Walk_RTG`
+- `Walk_RTG_001`
+- `Walk_RTG_002`
+
+`Report.json` 会记录：
+
+- `rootFamilyPolicy`
+- `rootChainMapping`
+- `pelvisChainMapping`
+- `retargetOpsStackValid`
+- `retargetOpsStackCount`
+- `namingRule.conflictPolicy = "Create Unique Name"`
+- `namingRule.overwrite = false`
+
+## 已知限制
+
+- 当前只支持 UE5.8。旧版本 UE 已归档，不是当前主线目标。
+- MVP1 Alpha 已验证 Mixamo <-> UE Mannequin 风格流程，以及 UE Mannequin -> UE Mannequin。
+- MetaHuman、CC4、手指链精修、高级 Root Motion 控制和更多骨架 preset 暂不在本阶段范围内。
+- 插件不能保证每一种骨架都得到完美动作质量。重要动画仍建议打开生成的 Retargeter 做视觉检查。
+- `/Game/FX_RetargetAssistant/Setups/` 外的用户 Retargeter 不会被自动修复或保存。
+- 验证项目建议使用短项目名。UE 会提示项目名不要超过 20 个字符；建议使用 `FXRA58PkgVal`，不要使用 `FXRA58PackagedValidation` 这类长名字。
+
+## 验证记录
+
+当前 packaged validation 在一个干净 UE5.8 C++ 项目中完成，插件以 project plugin 形式安装。
+
+最新干净验证项目：
+
+```text
+F:\Unreal Projects\FXRA58PkgVal
+```
+
+已验证：
+
+- 插件可以在干净 UE5.8 项目中 mount。
+- `Window -> FX Retarget Assistant` 可以打开面板。
+- 面板标题显示 `FX Retarget Assistant - MVP1 Alpha / UE5.8`。
+- Generated IK Rig / IK Retargeter 可以在干净项目中重新创建。
+- UE5.8 Retarget Ops Stack 存在。
+- Root Family Directional Policy 会写入 `Report.json`。
+- 重复导出会生成 `_001` 和 `_002`。
+- 重开后，生成的 IK Rig / RTG / AnimSequence 可以加载。
+- `/Game/FX_RetargetAssistant/Setups/` 外的用户 Retargeter 在 Auto Repair 中保持只读。
+- 提交前 `git diff --check` 通过。
+
+## 开发备注
+
+当前源码分支：
+
+```text
+ue58-main
+```
+
+当前 UE5.8 开发项目：
+
+```text
+F:\Unreal Projects\FXRA58
+```
+
+后续干净验证项目建议名称：
+
+```text
+FXRA58PkgVal
+```
+
+## 所有权
+
+本插件是项目所有者的个人项目和个人资产。详见 `LICENSE`。
+
+---
+
+## English
+
 FX_RetargetAssistant is a UE5.8 editor plugin for guided IK Retargeter setup and batch AnimSequence export.
 
 Current status:
 
-`MVP1 Alpha / Beta-Gate Hygiene Pass Completed`
+```text
+MVP1 Alpha / Beta-Gate Hygiene Pass Completed
+```
 
 This is not Beta and not a Release Candidate. The MVP1 Alpha workflow has passed UE5.8 clean-project packaged validation and the Beta-Gate release-hygiene pass.
 
@@ -20,7 +239,11 @@ FX_RetargetAssistant does not replace Unreal Engine's native IK Rig or IK Retarg
 6. Retarget and export one or more animations.
 7. Review output AnimSequence assets and `Report.json`.
 
-The plugin is focused on the common MVP1 use case: Mixamo <-> UE Mannequin style retargeting plus UE Mannequin -> UE Mannequin validation.
+The current MVP1 validation focus is:
+
+- Mixamo -> UE Mannequin
+- UE Mannequin -> Mixamo
+- UE Mannequin -> UE Mannequin
 
 ## Install
 
@@ -36,7 +259,7 @@ Copy the packaged plugin folder into your UE5.8 project:
 YourProject/Plugins/FX_RetargetAssistant
 ```
 
-Then rebuild or reopen the project. The plugin is editor-only and requires Unreal Engine 5.8.
+Then rebuild or reopen the project. The plugin is editor-only and currently requires Unreal Engine 5.8.
 
 ## Open The Panel
 
@@ -72,7 +295,7 @@ FX Retarget Assistant - MVP1 Alpha / UE5.8
 
 - `Add Selected`: adds selected AnimSequence assets from the Content Browser. Non-matching skeletons are filtered or warned.
 - `Auto Create IK Rig + Retargeter`: creates or reuses generated setup assets under `/Game/FX_RetargetAssistant/Setups/`.
-- `Recreate Generated Setup`: explicitly rebuilds plugin-generated IK Rig / Retargeter assets. Use this when a generated setup is stale.
+- `Recreate Generated Setup`: explicitly rebuilds plugin-generated IK Rig / IK Retargeter assets. Use this when a generated setup is stale.
 - `Auto Repair IK Mapping`: repairs only plugin-generated setup assets. User Retargeters outside the setup folder are not modified.
 - `Clear Animations`: clears the selected animation list.
 - `Show Output Folder`: syncs Content Browser to the current output folder.
@@ -195,7 +418,7 @@ Current UE5.8 development project:
 F:\Unreal Projects\FXRA58
 ```
 
-Current clean validation project name for future runs:
+Recommended clean validation project name:
 
 ```text
 FXRA58PkgVal
